@@ -1,0 +1,13 @@
+{
+  "scenario_id": "noop",
+  "seed": 42,
+  "num_validators": 8,
+  "f": 2,
+  "max_height": 0,
+  "byzantine_nodes": [],
+  "transactions": [],
+  "topology": "full_mesh",
+  "message_drop_rate": 0,
+  "message_delay_rate": 0,
+  "node_crash_rate": 0
+}

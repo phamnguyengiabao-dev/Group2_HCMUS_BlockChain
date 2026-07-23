@@ -1,0 +1,54 @@
+{
+  "validator_keys": [
+    {
+      "index": 0,
+      "seed": "00000000",
+      "public_key_hex": "8dd2494c934ead410ba48934159f240a0616fa1a91c850ebad37a6189539ef4e",
+      "private_key_hex": "78bfbcf20b73c2ae6751359700a1908358491699b90b6ad2db4b85c4d36c630e"
+    },
+    {
+      "index": 1,
+      "seed": "00000001",
+      "public_key_hex": "730a3337ce203b78475d4786a39b3bd6783253ecd86cef7c19fca02b0d10ef3a",
+      "private_key_hex": "d857a4a6afc6b97e2d1427cd4f370f94669a767f03acdfdb21da2601e68ef1b9"
+    },
+    {
+      "index": 2,
+      "seed": "00000002",
+      "public_key_hex": "e4a7662dc02def65310ad36c47ca5f9041d2f7bfc9071caf00af46e1fadc11e4",
+      "private_key_hex": "23e9bce58fe2c8550ccb9a9633c9b00f359d57d13cfaa64d795ab357b8b31213"
+    },
+    {
+      "index": 3,
+      "seed": "00000003",
+      "public_key_hex": "7a2db9c387b5b7eb8ee751cd264062cbfa4a9b62209a25397f1a25a71a8cdc89",
+      "private_key_hex": "813385112fc0a1de2e4fefb9d5e4c09613a9ee6bde09d76f4953af2e135f5ce3"
+    },
+    {
+      "index": 4,
+      "seed": "00000004",
+      "public_key_hex": "3709c87c4f71fdd95ad472c7a785768384d24a59c3b8cc6a87217ca92d145f5c",
+      "private_key_hex": "6199e0efb98f3600449da8845ad7bf7be7e3e1ca50e78c89a0ef670d37d924ed"
+    },
+    {
+      "index": 5,
+      "seed": "00000005",
+      "public_key_hex": "97f790967a3cf43130940bb7bc9c37b212f4199d5000d2fe612efc4d70c1a292",
+      "private_key_hex": "41c09dc40575861bc8700a5e8c89d591185069386638a7999ef70758b399ecbe"
+    },
+    {
+      "index": 6,
+      "seed": "00000006",
+      "public_key_hex": "46e3e3d64ba839785a8e085a7f6e42ea28fab270492689907cdeb0c52b8a519d",
+      "private_key_hex": "07a850fb490b5ca7bddab22ecf23c084ac9d5614a658b782f18d935aeac893f4"
+    },
+    {
+      "index": 7,
+      "seed": "00000007",
+      "public_key_hex": "7c28e766ed51f67f306f796a8ecd25445edd9752fd906c975828daf0cee373c7",
+      "private_key_hex": "7900e9faaca86db59fc24e116b958e2bae7ff439b4193a77bcb10791e53a7fdc"
+    }
+  ],
+  "chain_id": "lab01-testnet",
+  "note": "Fixed test fixtures only - not for production use"
+}

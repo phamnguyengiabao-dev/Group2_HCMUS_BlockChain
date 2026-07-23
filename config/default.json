@@ -1,0 +1,21 @@
+{
+  "chain_id": "lab01-testnet",
+  "spec_version": "0.1",
+  "block_capacity": 10,
+  "timeout_schedule": {
+    "proposal_timeout": 10,
+    "prevote_timeout": 5,
+    "precommit_timeout": 5,
+    "round_timeout_delta": 2
+  },
+  "retention_policy": {
+    "keep_finalized_blocks": 100,
+    "keep_pending_blocks": 20
+  },
+  "network": {
+    "max_block_size_bytes": 65536,
+    "max_key_size_bytes": 256,
+    "max_value_size_bytes": 4096,
+    "bandwidth_limit_bytes_per_tick": 1048576
+  }
+}

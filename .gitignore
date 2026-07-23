@@ -1,0 +1,133 @@
+# =============================================================================
+# .gitignore — Lab 01 Blockchain Layer-1 Simulator (Python)
+# Team: 4 members | Python 3.10+ | Windows / macOS / Linux
+# pip + venv, no packaging/publishing, no Docker, no Node
+# =============================================================================
+
+# =============================================================================
+# PYTHON — RUNTIME CACHE
+# =============================================================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# =============================================================================
+# PYTHON — TEST & COVERAGE
+# =============================================================================
+
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+.benchmarks/
+pytestdebug.log
+
+# =============================================================================
+# PYTHON — TYPE CHECKING
+# =============================================================================
+
+.mypy_cache/
+.ruff_cache/
+
+# =============================================================================
+# PYTHON — VIRTUAL ENVIRONMENTS
+# (cover the three conventions commonly used by team members)
+# =============================================================================
+
+.venv/
+venv/
+env/
+
+# =============================================================================
+# PYTHON — LOCAL CONFIG OVERRIDES
+# pyenv version pin is personal, not team-wide
+# =============================================================================
+
+.python-version
+
+# =============================================================================
+# PROJECT — RUNTIME OUTPUTS
+# =============================================================================
+
+# Log files generated at runtime — reproducible, no need to track
+# Exception: keep the placeholder so the logs/ directory is committed
+logs/**/*.jsonl
+logs/**/*.log
+logs/**/
+!logs/.gitkeep
+
+# Temporary scripts (e.g. key generation one-offs)
+generate_*.py
+_tmp_*.py
+*.local.py
+
+# =============================================================================
+# PROJECT — SECRETS & LOCAL OVERRIDES
+#
+# NOTE: config/validator_keys.json contains Ed25519 TEST FIXTURES only.
+# Derived from the public seed "lab01-validator-fixture" — NOT a real secret.
+# It IS tracked in git intentionally so all team members get the same keys.
+#
+# If you ever need real private keys, add them as *.local.json and NEVER commit.
+# =============================================================================
+
+config/secrets.json
+config/*.local.json
+.env
+.env.*
+!.env.example
+
+# =============================================================================
+# EDITORS & IDEs
+# =============================================================================
+
+# VS Code — ignore personal workspace state, but track shared settings
+.vscode/*.code-workspace
+.vscode/launch.json
+
+# JetBrains (PyCharm)
+.idea/
+*.iml
+
+# Vim / Neovim
+*.swp
+*.swo
+*~
+
+# Sublime Text
+*.sublime-workspace
+
+# =============================================================================
+# OPERATING SYSTEMS
+# =============================================================================
+
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+
+# =============================================================================
+# JUPYTER NOTEBOOKS
+# Track .ipynb (useful for log analysis / demo) — ignore only checkpoint cache
+# =============================================================================
+
+.ipynb_checkpoints/
+
+# =============================================================================
+# KIRO IDE
+# =============================================================================
+
+.kiro/
