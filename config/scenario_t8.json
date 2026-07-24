@@ -12,8 +12,6 @@
   ],
   "topology": "full_mesh",
   "message_drop_rate": 0,
-
-  
   "message_delay_rate": 0,
   "node_crash_rate": 0
 }
