@@ -53,3 +53,50 @@ def encode_optional_hash(hash_bytes: bytes | None) -> bytes:
             f"hash_bytes must be exactly 32 bytes, got {len(hash_bytes)}"
         )
     return b"\x01" + hash_bytes
+
+#T1-03
+def encode_sorted_map(values: dict[str, bytes]) -> bytes:
+    """Encode a string-to-bytes map in canonical sorted order.
+
+    Format:
+        u64 entry_count
+        || encode_str(key_1)
+        || encode_bytes(value_1)
+        || ...
+        || encode_str(key_n)
+        || encode_bytes(value_n)
+
+    Keys are NFC-normalized and sorted lexicographically by their UTF-8 bytes.
+    """
+
+    normalized_entries: list[tuple[bytes, bytes]] = []
+
+    for key, value in values.items():
+        if not isinstance(key, str):
+            raise TypeError("Map key must be a string")
+
+        if not isinstance(value, bytes):
+            raise TypeError("Map value must be bytes")
+
+        # Normalize exactly like encode_str()
+        normalized_key = unicodedata.normalize("NFC", key)
+
+        # Raw UTF-8 bytes are used for sorting
+        key_utf8 = normalized_key.encode("utf-8")
+
+        normalized_entries.append((key_utf8, value))
+
+    # Sort lexicographically by raw UTF-8 key bytes
+    normalized_entries.sort(key=lambda entry: entry[0])
+
+    result = bytearray()
+
+    # Number of entries
+    result.extend(encode_uint64(len(normalized_entries)))
+
+    # Encode each key-value pair in canonical order
+    for key_utf8, value in normalized_entries:
+        result.extend(encode_bytes(key_utf8))
+        result.extend(encode_bytes(value))
+
+    return bytes(result)
