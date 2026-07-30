@@ -46,18 +46,18 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 ## GIAI ĐOẠN 0 — Repository Scaffold ✅ HOÀN THÀNH
 
-**Người thực hiện: Phạm Nguyễn Gia Bảo (toàn bộ)**
+> **Thời gian:** 2026-07-21 (1 ngày) | **Người thực hiện: Phạm Nguyễn Gia Bảo (toàn bộ)**
 
 | Task ID | Công việc | Đầu ra | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
 |---------|-----------|--------|---------|--------|------|----------|------------|
-| T0-01 | Tạo thư mục `src/`, `tests/`, `logs/`, `config/` + `__init__.py` | Cấu trúc thư mục | 7 | 3 | 1 | 21 | ✅ Done |
-| T0-02 | Viết `README.md` root với hướng dẫn cài đặt và lệnh test | `README.md` | 6 | 2 | 1 | 12 | ✅ Done |
-| T0-03 | Tạo `config/default.json` (block_capacity, timeouts, retention, limits) | `config/default.json` | 7 | 3 | 1 | 21 | ✅ Done |
-| T0-04 | Tạo 8 cặp khóa Ed25519 cố định (seed-based HKDF) | `config/validator_keys.json` | 8 | 5 | 1 | 40 | ✅ Done |
-| T0-05 | Tạo scenario files: noop, t1, t8 | `config/scenario_*.json` | 7 | 3 | 1 | 21 | ✅ Done |
-| T0-06 | Viết entry point test + no-op scenario tạo canonical log; implement `src/event_log.py` + `src/scenario_runner.py` | `tests/test_noop.py`, `verify_determinism.py`, `src/event_log.py`, `src/scenario_runner.py` | 9 | 7 | 2 | 126 | ✅ Done |
+| T0-01 | Tạo thư mục `src/`, `tests/`, `logs/`, `config/` + `__init__.py` đúng vị trí; Python package structure hợp lệ | Cấu trúc thư mục | 8 | 2 | 1 | 16 | ✅ Done |
+| T0-02 | Viết `README.md` root: hướng dẫn cài đặt, lệnh test, mô tả dự án + cấu trúc thư mục | `README.md` | 6 | 2 | 1 | 12 | ✅ Done |
+| T0-03 | Tạo `config/default.json`: block_capacity, timeout_schedule (3 loại), retention_policy, network limits — căn cứ PROTOCOL_SPEC.md | `config/default.json` | 7 | 4 | 1 | 28 | ✅ Done |
+| T0-04 | Tạo 8 cặp khóa Ed25519 deterministic (seed-based HKDF); format `{pubkey_hex: privkey_hex}`; thứ tự lexicographic | `config/validator_keys.json` | 9 | 6 | 1 | 54 | ✅ Done |
+| T0-05 | Tạo 3 scenario config files: `scenario_noop.json`, `scenario_t1.json`, `scenario_t8.json`; mỗi file có fault_config, network_params, max_height, seed | `config/scenario_*.json` | 8 | 4 | 1 | 32 | ✅ Done |
+| T0-06 | Implement `src/event_log.py` (canonical JSONL writer, fixed key order, event_no monotonic) + `src/scenario_runner.py` (load config, init nodes, simulation loop) + `tests/test_noop.py` (3 tests pass) + `tests/verify_determinism.py` | 4 files | 9 | 8 | 3 | 216 | ✅ Done |
 
-> **G0 tổng trọng số: 241**
+> **G0 tổng trọng số: 358** | Ghi chú: T0-06 nặng nhất (4 files, 2 module nguồn đầy đủ, test suite pass)
 
 > **Ghi chú trạng thái (cập nhật 2026-07-29):**
 > - `src/event_log.py` và `src/scenario_runner.py` đã được implement đầy đủ trong giai đoạn scaffold (thuộc T0-06 mở rộng).
@@ -443,9 +443,9 @@ Tuần 6  │ Run T1–T8, viết report, đóng gói (Bảo lead submit)
 
 | Quy tắc | Mô tả |
 |---------|-------|
-| **Branch per task** | Mỗi Task ID = 1 branch, tạo PR để merge vào `main` |
+| **Branch per task** | Mỗi người = 1 branch, commit tên task và tạo PR để merge vào `main` |
 | **Test đi kèm** | Mọi PR coding phải có unit test tương ứng |
 | **Review bởi Bảo** | Bảo review và approve tất cả PR trước khi merge |
 | **Không wall-clock** | Tuyệt đối không dùng `time.time()`, `datetime.now()`, `random.random()` global |
 | **Canonical sort** | Mọi loop trên dict/set phải qua `sorted()` |
-| **Cập nhật file** | Sau khi hoàn thành task, cập nhật `% hoàn thành` trong file Excel |
+| **Cập nhật file** | Sau khi hoàn thành task, cập nhật `% hoàn thành` trong file Excel gantt chart|
