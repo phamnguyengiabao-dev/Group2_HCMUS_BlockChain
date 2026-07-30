@@ -20,8 +20,15 @@
 
 - **Giai đoạn 0:** Bảo làm toàn bộ — **đã hoàn thành** ✅
 - **Giai đoạn 1–5:** Mỗi giai đoạn **chia đều cho cả 5 người**
-- **Bảo (TL):** Mỗi giai đoạn chỉ nhận **1 task coding** để dành thời gian review PR, tích hợp milestone và resolve blockers
+- **Bảo (TL):** Mỗi giai đoạn chỉ nhận **1 task coding** để dành thời gian review PR, tích hợp milestone và resolve blockers. Ngoài task coding, Bảo còn chịu trách nhiệm **2 task management** được tính điểm mỗi giai đoạn (xem bên dưới).
 - Các thành viên còn lại (Hiếu, Khôi, Khánh, Huy): nhận số task tương đương nhau mỗi giai đoạn
+
+### Định Nghĩa Task Management Của Bảo (Tính Điểm)
+
+| Task ID | Công việc | Ưu tiên | Độ khó | Ngày | Trọng số/giai đoạn | Ghi chú |
+|---------|-----------|---------|--------|------|---------------------|---------|
+| MG-PR | Review & approve toàn bộ PR của giai đoạn — đọc diff, kiểm tra correctness, canonical sort, test coverage | 8 | 5 | 2 | 80 | Áp dụng cho G1→G5 (5 giai đoạn × 80 = **400**) |
+| MG-INT | Tích hợp milestone: merge branches, resolve conflicts, chạy full test suite, update trạng thái tài liệu | 7 | 4 | 1 | 28 | Áp dụng cho G1→G5 (5 giai đoạn × 28 = **140**) |
 
 ---
 
@@ -41,14 +48,16 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 **Người thực hiện: Phạm Nguyễn Gia Bảo (toàn bộ)**
 
-| Task ID | Công việc | Đầu ra | Trạng thái |
-|---------|-----------|--------|------------|
-| T0-01 | Tạo thư mục `src/`, `tests/`, `logs/`, `config/` + `__init__.py` | Cấu trúc thư mục | ✅ Done |
-| T0-02 | Viết `README.md` root với hướng dẫn cài đặt và lệnh test | `README.md` | ✅ Done |
-| T0-03 | Tạo `config/default.json` (block_capacity, timeouts, retention, limits) | `config/default.json` | ✅ Done |
-| T0-04 | Tạo 8 cặp khóa Ed25519 cố định (seed-based HKDF) | `config/validator_keys.json` | ✅ Done |
-| T0-05 | Tạo scenario files: noop, t1, t8 | `config/scenario_*.json` | ✅ Done |
-| T0-06 | Viết entry point test + no-op scenario tạo canonical log | `tests/test_noop.py`, `verify_determinism.py` | ✅ Done |
+| Task ID | Công việc | Đầu ra | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
+|---------|-----------|--------|---------|--------|------|----------|------------|
+| T0-01 | Tạo thư mục `src/`, `tests/`, `logs/`, `config/` + `__init__.py` | Cấu trúc thư mục | 7 | 3 | 1 | 21 | ✅ Done |
+| T0-02 | Viết `README.md` root với hướng dẫn cài đặt và lệnh test | `README.md` | 6 | 2 | 1 | 12 | ✅ Done |
+| T0-03 | Tạo `config/default.json` (block_capacity, timeouts, retention, limits) | `config/default.json` | 7 | 3 | 1 | 21 | ✅ Done |
+| T0-04 | Tạo 8 cặp khóa Ed25519 cố định (seed-based HKDF) | `config/validator_keys.json` | 8 | 5 | 1 | 40 | ✅ Done |
+| T0-05 | Tạo scenario files: noop, t1, t8 | `config/scenario_*.json` | 7 | 3 | 1 | 21 | ✅ Done |
+| T0-06 | Viết entry point test + no-op scenario tạo canonical log; implement `src/event_log.py` + `src/scenario_runner.py` | `tests/test_noop.py`, `verify_determinism.py`, `src/event_log.py`, `src/scenario_runner.py` | 9 | 7 | 2 | 126 | ✅ Done |
+
+> **G0 tổng trọng số: 241**
 
 > **Ghi chú trạng thái (cập nhật 2026-07-29):**
 > - `src/event_log.py` và `src/scenario_runner.py` đã được implement đầy đủ trong giai đoạn scaffold (thuộc T0-06 mở rộng).
@@ -94,7 +103,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | T1-12 | Transaction object + validation: chain_id, nonce, namespace prefix, size limits, signature | `src/transaction.py` | **Khánh** | 9 | 7 | 2 | 126 | 🔲 Chưa làm |
 | T1-13 | Deterministic executor: apply tx list theo thứ tự → post-state + updated nonces; tx không hợp lệ → invalidate toàn block | `src/executor.py` | **Khôi** | 9 | 8 | 2 | 144 | 🔲 Chưa làm |
 | T1-14 | Unit test determinism: cùng block thực thi 2 lần → byte/hash giống nhau | `tests/test_executor.py` | **Hiếu** | 9 | 5 | 1 | 45 | 🔲 Chưa làm |
-| T1-15 | Unit test transaction: namespace sai, nonce sai, tx trùng, kích thước vượt giới hạn → reject | `tests/test_transaction.py` | **Hiếu** | 9 | 5 | 1 | 45 | 🔲 Chưa làm |
+| T1-15 | Unit test transaction: namespace sai, nonce sai, tx trùng, kích thước vượt giới hạn → reject | `tests/test_transaction.py` | ~~Hiếu~~ → **Bảo** | 9 | 5 | 1 | 45 | 🔲 Chưa làm |
 
 **✅ Milestone 1 done khi:** Tất cả unit test encoding/crypto/state pass; determinism xác nhận.
 
@@ -114,7 +123,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | T2-02 | `tx_root = SHA256(encode(count) \|\| tx_id[0] \|\| tx_id[1] \|\| ...)`; block rỗng = hash(count=0) | `src/block.py` | **Huy** | 8 | 5 | 1 | 40 |
 | T2-03 | Header validation guards (F-26): chain_id, height, round, parent_hash, expected proposer, HEADER domain signature | `src/block_validator.py` | **Khôi** | 9 | 7 | 2 | 126 |
 | T2-04 | Block Body object + full candidate validation (F-27–F-29): tx_root khớp, all txs valid, post-state hash khớp | `src/block.py` | **Khôi** | 9 | 7 | 2 | 126 |
-| T2-05 | Unit test block: parent sai / proposer sai / height sai / tx_root sai / state_hash sai / signature sai → tất cả đều bị bắt | `tests/test_block.py` | **Hiếu** | 9 | 6 | 1 | 54 |
+| T2-05 | Unit test block: parent sai / proposer sai / height sai / tx_root sai / state_hash sai / signature sai → tất cả đều bị bắt | `tests/test_block.py` | ~~Hiếu~~ → **Bảo** | 9 | 6 | 1 | 54 |
 
 ### 2B — Vote & VoteSet (`src/vote.py`, `src/vote_set.py`)
 
@@ -252,17 +261,49 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 ## Bảng Tổng Hợp Phân Công Theo Thành Viên
 
-### Phạm Nguyễn Gia Bảo (Team Leader — 1 task/giai đoạn)
+### Phạm Nguyễn Gia Bảo (Team Leader — 1 task coding + 2 task management/giai đoạn)
+
+**Phần G0 — đã hoàn thành:**
 
 | Giai đoạn | Task | Mô tả ngắn | Trọng số | Trạng thái |
 |-----------|------|------------|----------|------------|
-| G0 | T0-01→T0-06 | Toàn bộ scaffold (đã xong) | ✅ | ✅ Done |
+| G0 | T0-01→T0-06 | Toàn bộ scaffold + event_log + scenario_runner | **241** | ✅ Done |
+
+**Phần G1–G5 — coding tasks:**
+
+| Giai đoạn | Task | Mô tả ngắn | Trọng số | Trạng thái |
+|-----------|------|------------|----------|------------|
 | G1 | T1-09 | Load/validate identity fixtures | 21 | 🔲 Chưa làm |
+| G1 | T1-15 | Unit test transaction rejection *(chuyển từ Hiếu)* | 45 | 🔲 Chưa làm |
+| G2 | T2-05 | Unit test block validation *(chuyển từ Hiếu)* | 54 | 🔲 Chưa làm |
 | G2 | T2-09 | Quorum counting `has_quorum()` | 54 | 🔲 Chưa làm |
 | G3 | T3-09 | Peer blocking/unblocking | 30 | 🔲 Chưa làm |
 | G4 | T4-08 | Round change logic | 63 | 🔲 Chưa làm |
 | G5 | T5-10 | `--verify-determinism` script | 36 | 🔲 Chưa làm |
-| **Tổng** | **5 tasks** | + review toàn bộ PR | **204** | |
+| **Subtotal coding G1–G5** | | | **303** | |
+
+**Phần G1–G5 — management tasks (tính điểm):**
+
+| Giai đoạn | Task | Mô tả ngắn | Trọng số | Trạng thái |
+|-----------|------|------------|----------|------------|
+| G1 | MG-PR | Review & approve toàn bộ PR giai đoạn 1 | 80 | 🔲 |
+| G1 | MG-INT | Tích hợp milestone 1, resolve conflicts, full test suite | 28 | 🔲 |
+| G2 | MG-PR | Review & approve toàn bộ PR giai đoạn 2 | 80 | 🔲 |
+| G2 | MG-INT | Tích hợp milestone 2 | 28 | 🔲 |
+| G3 | MG-PR | Review & approve toàn bộ PR giai đoạn 3 | 80 | 🔲 |
+| G3 | MG-INT | Tích hợp milestone 3 | 28 | 🔲 |
+| G4 | MG-PR | Review & approve toàn bộ PR giai đoạn 4 | 80 | 🔲 |
+| G4 | MG-INT | Tích hợp milestone 4 | 28 | 🔲 |
+| G5 | MG-PR | Review & approve toàn bộ PR giai đoạn 5 | 80 | 🔲 |
+| G5 | MG-INT | Tích hợp milestone 5, đóng gói nộp bài | 28 | 🔲 |
+| **Subtotal management G1–G5** | | | **540** | |
+
+| Hạng mục | Trọng số |
+|----------|----------|
+| G0 coding | 241 |
+| G1–G5 coding | 303 |
+| G1–G5 management | 540 |
+| **Tổng Bảo** | **1.084** |
 
 ### Nguyễn Minh Hiếu (3–4 tasks/giai đoạn)
 
@@ -270,8 +311,6 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 |-----------|------|------------|----------|------------|
 | G1 | T1-08 | Unit test crypto | 45 | 🔲 Chưa làm |
 | G1 | T1-14 | Unit test determinism executor | 45 | 🔲 Chưa làm |
-| G1 | T1-15 | Unit test transaction rejection | 45 | 🔲 Chưa làm |
-| G2 | T2-05 | Unit test block validation | 54 | 🔲 Chưa làm |
 | G2 | T2-10 | Unit test vote_set | 54 | 🔲 Chưa làm |
 | G2 | T2-13 | Atomic persist ledger | 72 | 🔲 Chưa làm |
 | G3 | T3-05 | Deterministic scheduler | 126 | 🔲 Chưa làm |
@@ -283,7 +322,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G4 | T4-11 | Crash simulation | 48 | 🔲 Chưa làm |
 | G5 | T5-03 | Scenario T3 (bad sig/domain) | 54 | 🔲 Chưa làm |
 | G5 | T5-09 | Export compact summary | 35 | 🔲 Chưa làm |
-| **Tổng** | **15 tasks** | | **983** | |
+| **Tổng** | **13 tasks** | *(T1-15 → Bảo, T2-05 → Bảo)* | **884** | |
 
 ### Võ Kim Khôi (3–4 tasks/giai đoạn)
 
@@ -355,15 +394,16 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 ## Tóm Tắt So Sánh Tải Công Việc
 
-> **Cập nhật trạng thái: 2026-07-29** — Dựa trên git log hiện tại.
+> **Cập nhật trạng thái: 2026-07-30** — Bao gồm G0, coding G1–G5, và management tasks của Bảo.
 
-| Thành viên | Số task (G1–G5) | Tổng trọng số | Tasks đã Done | Ghi chú |
-|------------|-----------------|---------------|---------------|---------|
-| **Bảo** | 5 | 204 | 0 | + review toàn bộ PR các giai đoạn |
-| **Hiếu** | 15 | 983 | 0 | Nặng về testing + consensus core |
-| **Khôi** | 16 | 1.402 | 0 | Nặng về validation + network |
-| **Khánh** | 17 *(+T1-03 thực tế)* | 1.196 | **T1-01, T1-02, T1-03** ✅ | Nặng về encoding + infrastructure |
-| **Huy** | 14 *(T1-03 chuyển Khánh)* | 1.015 | 0 (T1-04 còn thiếu) | ⚠️ Cần bổ sung test T1-04 |
+| Thành viên | Tổng trọng số | Breakdown | Tasks đã Done | Ghi chú |
+|------------|---------------|-----------|---------------|---------|
+| **Bảo** | **1.084** | G0: 241 + Coding G1–G5: 303 + Management G1–G5: 540 | G0 ✅ | TL: review PR + tích hợp milestone + 7 coding tasks G1–G5 |
+| **Hiếu** | **884** | 13 tasks coding G1–G5 | 0 | T1-15 và T2-05 chuyển sang Bảo |
+| **Khôi** | **1.402** | 16 tasks coding G1–G5 | 0 | Nặng về validation + network |
+| **Khánh** | **1.223** | 17 tasks coding G1–G5 | **T1-01, T1-02, T1-03, T1-05** ✅ | Nặng về encoding + infrastructure |
+| **Huy** | **1.015** | 14 tasks coding G1–G5 | **T1-04, T1-10, T1-11** ✅ (pending merge) | ⚠️ 3 branch chờ merge |
+| **Trung bình** | **1.122** | | | |
 
 ### Trạng Thái Tổng Quan Theo Giai Đoạn
 
@@ -380,9 +420,9 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 > 1. **Huy** — bổ sung test 4 hàm còn thiếu vào `tests/test_encoding.py` (T1-04)
 > 2. **Khánh** — implement `src/crypto.py` `hash_bytes()` (T1-05), `src/transaction.py` (T1-12)
 > 3. **Khôi** — implement `src/crypto.py` `sign()` / `verify()` (T1-06, T1-07), `src/executor.py` (T1-13)
-> 4. **Hiếu** — viết `tests/test_crypto.py` (T1-08), `tests/test_executor.py` (T1-14), `tests/test_transaction.py` (T1-15)
-> 5. **Huy** — implement `src/state.py` (T1-10, T1-11)
-> 6. **Bảo** — implement `src/identity.py` (T1-09)
+> 4. **Hiếu** — viết `tests/test_crypto.py` (T1-08), `tests/test_executor.py` (T1-14)
+> 5. **Bảo** — implement `src/identity.py` (T1-09), viết `tests/test_transaction.py` (T1-15)
+> 6. **Huy** — implement `src/state.py` (T1-10, T1-11)
 
 ---
 
