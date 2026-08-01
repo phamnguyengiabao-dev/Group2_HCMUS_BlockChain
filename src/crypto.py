@@ -5,10 +5,9 @@ T1-05:
 - SHA-256 hashing
 - hash_bytes(data) -> bytes
 
-T1-06,07:
+T1-06, T1-07:
 - Ed25519 signing/verification with domain-separated messages
-- UTF-8(domain) || 0x00 || payload
-
+- Message format: UTF-8(domain) || 0x00 || payload
 """
 
 import hashlib
@@ -57,17 +56,18 @@ def _build_message(domain: str, payload: bytes) -> bytes:
         raise ValueError("payload must be bytes")
     return domain.encode("utf-8") + DOMAIN_SEPARATOR + bytes(payload)
 
+
 def sign(privkey: bytes, domain: str, payload: bytes) -> bytes:
     """
     Sign `payload` under the given domain-separated context.
 
     Args:
         privkey: 32-byte Ed25519 private key seed.
-        domain: domain-separation context string.
-        payload: canonical-encoded bytes to sign.
+        domain: Domain-separation context string (e.g. "TX:lab01").
+        payload: Canonical-encoded bytes to sign.
 
     Returns:
-        64-byte Ed25519 signature over  utf8(domain) || 0x00 || payload.
+        64-byte Ed25519 signature over utf8(domain) || 0x00 || payload.
     """
     if not isinstance(privkey, (bytes, bytearray)) or len(privkey) != PRIVATE_KEY_LEN:
         raise ValueError(f"privkey must be {PRIVATE_KEY_LEN} bytes")
@@ -82,14 +82,13 @@ def verify(pubkey: bytes, domain: str, payload: bytes, signature: bytes) -> bool
     Verify a signature under the given domain-separated context.
 
     Args:
-        domain: the domain expects for this message type.
         pubkey: 32-byte Ed25519 public key.
-        payload: canonical-encoded bytes that were signed.
+        domain: The domain expected for this message type.
+        payload: Canonical-encoded bytes that were signed.
         signature: 64-byte Ed25519 signature to check.
 
     Returns:
-        True if the signature is valid.
-        False for invalid signatures OR malformed.
+        True if the signature is valid, False for any invalid or malformed input.
     """
     try:
         if not isinstance(pubkey, (bytes, bytearray)) or len(pubkey) != PUBLIC_KEY_LEN:
