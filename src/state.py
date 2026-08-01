@@ -19,7 +19,7 @@ Two properties matter more than performance here:
 Nonces are *not* stored here; the executor owns the sender nonce map.
 """
 
-import hashlib
+from src.crypto import hash_bytes
 import unicodedata
 
 from src.encoding import encode_sorted_map
@@ -146,7 +146,7 @@ class State:
         an empty input.
         """
         # TODO(T1-05): delegate to crypto.hash_bytes() once src/crypto.py lands.
-        return hashlib.sha256(self.canonical_bytes()).digest()
+        return hash_bytes(self.canonical_bytes())
 
     def state_hash_hex(self) -> str:
         """The state commitment as lowercase hex.
