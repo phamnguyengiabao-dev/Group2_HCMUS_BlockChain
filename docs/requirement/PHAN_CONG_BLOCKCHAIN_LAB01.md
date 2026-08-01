@@ -18,12 +18,12 @@
 
 ## Quy Tắc Phân Công
 
-- **Giai đoạn 0:** Bảo làm toàn bộ — **đã hoàn thành** ✅
+- **Giai đoạn 0:** Leader làm toàn bộ — **đã hoàn thành** ✅
 - **Giai đoạn 1–5:** Mỗi giai đoạn **chia đều cho cả 5 người**
-- **Bảo (TL):** Mỗi giai đoạn chỉ nhận **1 task coding** để dành thời gian review PR, tích hợp milestone và resolve blockers. Ngoài task coding, Bảo còn chịu trách nhiệm **2 task management** được tính điểm mỗi giai đoạn (xem bên dưới).
+- **Bảo (TeamLeader):** Mỗi giai đoạn chỉ nhận **1-2 task coding** để dành thời gian review PR, tích hợp milestone và resolve blockers. Ngoài task coding, Bảo còn chịu trách nhiệm **2 task management** được tính điểm mỗi giai đoạn (xem bên dưới).
 - Các thành viên còn lại (Hiếu, Khôi, Khánh, Huy): nhận số task tương đương nhau mỗi giai đoạn
 
-### Định Nghĩa Task Management Của Bảo (Tính Điểm)
+### Định Nghĩa Task Management Của Leader (Tính Điểm)
 
 | Task ID | Công việc | Ưu tiên | Độ khó | Ngày | Trọng số/giai đoạn | Ghi chú |
 |---------|-----------|---------|--------|------|---------------------|---------|
@@ -46,7 +46,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 ## GIAI ĐOẠN 0 — Repository Scaffold ✅ HOÀN THÀNH
 
-> **Thời gian:** 2026-07-21 (1 ngày) | **Người thực hiện: Phạm Nguyễn Gia Bảo (toàn bộ)**
+> **Thời gian:** 2026-07-21 (1 ngày) | **Người thực hiện: Phạm Nguyễn Gia Bảo**
 
 | Task ID | Công việc | Đầu ra | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
 |---------|-----------|--------|---------|--------|------|----------|------------|
@@ -78,34 +78,34 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | T1-01 | `encode_uint64`, `encode_bool`, `encode_bytes`, `encode_str` — unsigned 64-bit big-endian, boolean 1 byte, byte string với u32 length prefix | `src/encoding.py` | **Bảo** | 9 | 5 | 1 | 45 | ✅ Done (commit `8d5f3e3`) |
 | T1-02 | `encode_optional_hash` — presence byte + 32 byte hash; raise ValueError nếu sai size | `src/encoding.py` | **Khánh** | 8 | 4 | 1 | 32 | ✅ Done (commit `8d5f3e3`) |
 | T1-03 | Sorted map encoder — sắp xếp theo UTF-8 key bytes trước khi concatenate | `src/encoding.py` | ~~Huy~~ → **Khánh** | 8 | 5 | 1 | 40 | ✅ Done (commit `8d5f3e3`, Khánh thực hiện) |
-| T1-04 | Unit test encoding: byte-identical cho giá trị ngữ nghĩa bằng nhau; test tất cả 5 hàm (`encode_uint64`, `encode_bool`, `encode_bytes`, `encode_str`, `encode_optional_hash`) | `tests/test_encoding.py` | ~~Huy~~ → **Huy** (còn lại) / **Khánh** (đã có test cho T1-03) | 9 | 4 | 1 | 36 | ⚠️ Một phần — chỉ có test cho `encode_sorted_map`; **Huy bổ sung test 4 hàm còn lại** |
+| T1-04 | Unit test encoding: byte-identical cho giá trị ngữ nghĩa bằng nhau; test tất cả 5 hàm (`encode_uint64`, `encode_bool`, `encode_bytes`, `encode_str`, `encode_optional_hash`) | `tests/test_encoding.py` | **Huy** | 9 | 4 | 1 | 36 | ✅ Done — tất cả 5 hàm đều có test, 47 tests pass |
 
 > **Ghi chú phân bổ lại T1-03 & T1-04:**
 > - Khánh đã implement T1-02, **và T1-03** trong cùng một commit → ghi nhận Khánh cho cả 3 task.
-> - T1-04 gốc thuộc Huy: phần `encode_sorted_map` Khánh đã viết test; **Huy chỉ cần bổ sung test cho 4 hàm còn lại** (`encode_uint64`, `encode_bool`, `encode_bytes`, `encode_str`, `encode_optional_hash`) vào `tests/test_encoding.py`.
+> - T1-04: `tests/test_encoding.py` hiện có đầy đủ test cho tất cả 5 hàm (`encode_uint64`, `encode_bool`, `encode_bytes`, `encode_str`, `encode_optional_hash`) + `encode_sorted_map` — **hoàn thành**.
 
 ### 1B — Cryptography (`src/crypto.py`, `src/identity.py`)
 
 | Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
 |---------|-----------|------|-------|---------|--------|------|----------|------------|
-| T1-05 | Tích hợp SHA-256; viết `hash_bytes(data) -> bytes` trả 32 bytes | `src/crypto.py` | **Khánh** | 9 | 3 | 1 | 27 | 🔲 Chưa làm |
-| T1-06 | Ed25519 `sign(domain, payload)`: ký `utf8(domain) \|\| 0x00 \|\| payload` với domain separation | `src/crypto.py` | **Khôi** | 9 | 6 | 1 | 54 | 🔲 Chưa làm |
-| T1-07 | `verify(domain, pubkey, payload, signature)` — kiểm tra chữ ký với domain mong đợi | `src/crypto.py` | **Khôi** | 9 | 6 | 1 | 54 | 🔲 Chưa làm |
-| T1-08 | Unit test crypto: sai domain → fail, sai key → fail, sai payload → fail, đúng → pass | `tests/test_crypto.py` | **Hiếu** | 9 | 5 | 1 | 45 | 🔲 Chưa làm |
-| T1-09 | Load và validate identity fixtures từ `validator_keys.json`; trả về sorted validator list | `src/identity.py` | **Bảo** | 7 | 3 | 1 | 21 | 🔲 Chưa làm |
+| T1-05 | Tích hợp SHA-256; viết `hash_bytes(data) -> bytes` trả 32 bytes | `src/crypto.py` | **Khánh** | 9 | 3 | 1 | 27 | ✅ Done — 8 tests pass |
+| T1-06 | Ed25519 `sign(domain, payload)`: ký `utf8(domain) \|\| 0x00 \|\| payload` với domain separation | `src/crypto.py` | **Khôi** | 9 | 6 | 1 | 54 | ✅ Done — tests pass |
+| T1-07 | `verify(domain, pubkey, payload, signature)` — kiểm tra chữ ký với domain mong đợi | `src/crypto.py` | **Khôi** | 9 | 6 | 1 | 54 | ✅ Done — tests pass |
+| T1-08 | Unit test crypto: sai domain → fail, sai key → fail, sai payload → fail, đúng → pass | `tests/test_crypto.py` | **Hiếu** | 9 | 5 | 1 | 45 | ✅ Done — 14 tests pass |
+| T1-09 | Load và validate identity fixtures từ `validator_keys.json`; trả về sorted validator list | `src/identity.py` | **Bảo** | 7 | 3 | 1 | 21 | ✅ Done — 10 tests pass |
 
 ### 1C — State & Executor (`src/state.py`, `src/transaction.py`, `src/executor.py`)
 
 | Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
 |---------|-----------|------|-------|---------|--------|------|----------|------------|
-| T1-10 | Sorted key-value state map: insert/get/delete; dùng sorted dict để đảm bảo thứ tự | `src/state.py` | **Huy** | 8 | 5 | 2 | 80 | 🔲 Chưa làm |
-| T1-11 | State commitment: `SHA256(encode(entry_count) \|\| sorted(key, value_bytes) pairs)` | `src/state.py` | **Huy** | 8 | 6 | 1 | 48 | 🔲 Chưa làm |
-| T1-12 | Transaction object + validation: chain_id, nonce, namespace prefix, size limits, signature | `src/transaction.py` | **Khánh** | 9 | 7 | 2 | 126 | 🔲 Chưa làm |
-| T1-13 | Deterministic executor: apply tx list theo thứ tự → post-state + updated nonces; tx không hợp lệ → invalidate toàn block | `src/executor.py` | **Khôi** | 9 | 8 | 2 | 144 | 🔲 Chưa làm |
-| T1-14 | Unit test determinism: cùng block thực thi 2 lần → byte/hash giống nhau | `tests/test_executor.py` | **Hiếu** | 9 | 5 | 1 | 45 | 🔲 Chưa làm |
-| T1-15 | Unit test transaction: namespace sai, nonce sai, tx trùng, kích thước vượt giới hạn → reject | `tests/test_transaction.py` | ~~Hiếu~~ → **Bảo** | 9 | 5 | 1 | 45 | 🔲 Chưa làm |
+| T1-10 | Sorted key-value state map: insert/get/delete; dùng sorted dict để đảm bảo thứ tự | `src/state.py` | **Huy** | 8 | 5 | 2 | 80 | ✅ Done — `src/state.py` đầy đủ |
+| T1-11 | State commitment: `SHA256(encode(entry_count) \|\| sorted(key, value_bytes) pairs)` | `src/state.py` | **Huy** | 8 | 6 | 1 | 48 | ✅ Done — `state_hash()` implement |
+| T1-12 | Transaction object + validation: chain_id, nonce, namespace prefix, size limits, signature | `src/transaction.py` | **Khánh** | 9 | 7 | 2 | 126 | ✅ Done — 8 tests pass |
+| T1-13 | Deterministic executor: apply tx list theo thứ tự → post-state + updated nonces; tx không hợp lệ → invalidate toàn block | `src/executor.py` | **Khôi** | 9 | 8 | 2 | 144 | 🔲 Chưa làm — file chưa tồn tại |
+| T1-14 | Unit test determinism: cùng block thực thi 2 lần → byte/hash giống nhau | `tests/test_executor.py` | **Hiếu** | 9 | 5 | 1 | 45 | 🔲 Chưa làm — file chưa tồn tại |
+| T1-15 | Unit test transaction: namespace sai, nonce sai, tx trùng, kích thước vượt giới hạn → reject | `tests/test_transaction.py` | ~~Hiếu~~ → **Bảo** | 9 | 5 | 1 | 45 | ✅ Done — 8 tests pass |
 
-**✅ Milestone 1 done khi:** Tất cả unit test encoding/crypto/state pass; determinism xác nhận.
+**🔄 Milestone 1 gần xong:** 13/15 task pass (88 tests xanh). Còn T1-13 (`src/executor.py`) và T1-14 (`tests/test_executor.py`) — do **Khôi** và **Hiếu** thực hiện.
 
 ---
 
@@ -273,8 +273,8 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 | Giai đoạn | Task | Mô tả ngắn | Trọng số | Trạng thái |
 |-----------|------|------------|----------|------------|
-| G1 | T1-09 | Load/validate identity fixtures | 21 | 🔲 Chưa làm |
-| G1 | T1-15 | Unit test transaction rejection *(chuyển từ Hiếu)* | 45 | 🔲 Chưa làm |
+| G1 | T1-09 | Load/validate identity fixtures | 21 | ✅ Done |
+| G1 | T1-15 | Unit test transaction rejection *(chuyển từ Hiếu)* | 45 | ✅ Done |
 | G2 | T2-05 | Unit test block validation *(chuyển từ Hiếu)* | 54 | 🔲 Chưa làm |
 | G2 | T2-09 | Quorum counting `has_quorum()` | 54 | 🔲 Chưa làm |
 | G3 | T3-09 | Peer blocking/unblocking | 30 | 🔲 Chưa làm |
@@ -309,8 +309,8 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 | Giai đoạn | Task | Mô tả ngắn | Trọng số | Trạng thái |
 |-----------|------|------------|----------|------------|
-| G1 | T1-08 | Unit test crypto | 45 | 🔲 Chưa làm |
-| G1 | T1-14 | Unit test determinism executor | 45 | 🔲 Chưa làm |
+| G1 | T1-08 | Unit test crypto | 45 | ✅ Done |
+| G1 | T1-14 | Unit test determinism executor | 45 | 🔲 Chưa làm — chờ T1-13 |
 | G2 | T2-10 | Unit test vote_set | 54 | 🔲 Chưa làm |
 | G2 | T2-13 | Atomic persist ledger | 72 | 🔲 Chưa làm |
 | G3 | T3-05 | Deterministic scheduler | 126 | 🔲 Chưa làm |
@@ -328,8 +328,8 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 | Giai đoạn | Task | Mô tả ngắn | Trọng số | Trạng thái |
 |-----------|------|------------|----------|------------|
-| G1 | T1-06 | Ed25519 `sign()` với domain separation | 54 | 🔲 Chưa làm |
-| G1 | T1-07 | Ed25519 `verify()` | 54 | 🔲 Chưa làm |
+| G1 | T1-06 | Ed25519 `sign()` với domain separation | 54 | ✅ Done |
+| G1 | T1-07 | Ed25519 `verify()` | 54 | ✅ Done |
 | G1 | T1-13 | Deterministic executor | 144 | 🔲 Chưa làm |
 | G2 | T2-03 | Header validation guards (F-26) | 126 | 🔲 Chưa làm |
 | G2 | T2-04 | Block Body + candidate validation | 126 | 🔲 Chưa làm |
@@ -353,7 +353,8 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G1 | T1-01 | Canonical encoder cơ bản | 45 | ✅ Done |
 | G1 | T1-02 | `encode_optional_hash` | 32 | ✅ Done |
 | G1 | T1-03 | Sorted map encoder *(gộp vào cùng commit T1-01/02)* | 40 | ✅ Done |
-| G1 | T1-12 | Transaction object + validation | 126 | 🔲 Chưa làm |
+| G1 | T1-05 | `hash_bytes()` SHA-256 | 27 | ✅ Done |
+| G1 | T1-12 | Transaction object + validation | 126 | ✅ Done |
 | G2 | T2-01 | Block Header object | 126 | 🔲 Chưa làm |
 | G2 | T2-07 | VoteSet storage | 48 | 🔲 Chưa làm |
 | G2 | T2-14 | Crash recovery (load snapshot) | 72 | 🔲 Chưa làm |
@@ -367,16 +368,16 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G5 | T5-01 | Scenario T1 (normal run) | 45 | 🔲 Chưa làm |
 | G5 | T5-02 | Scenario T2 (dup + reorder) | 54 | 🔲 Chưa làm |
 | G5 | T5-08 | Scenario T8 (determinism) | 50 | 🔲 Chưa làm |
-| **Tổng** | **17 tasks** | *(T1-03 ghi nhận thêm do thực hiện vượt phân công)* | **1.196** | |
+| **Tổng** | **17 tasks** | *(T1-03 ghi nhận thêm do thực hiện vượt phân công; T1-05 và T1-12 hoàn thành trong G1)* | **1.250** | |
 
 ### Trương Nhật Huy (3–4 tasks/giai đoạn)
 
 | Giai đoạn | Task | Mô tả ngắn | Trọng số | Trạng thái |
 |-----------|------|------------|----------|------------|
 | G1 | T1-03 | ~~Sorted map encoder~~ → **đã được Khánh thực hiện** | ~~40~~ | ✅ Done (Khánh) |
-| G1 | T1-04 | Unit test encoding: **bổ sung test 4 hàm** `encode_uint64`, `encode_bool`, `encode_bytes`, `encode_str`, `encode_optional_hash` vào `tests/test_encoding.py` | 36 | ⚠️ Còn thiếu — Huy bổ sung phần còn lại |
-| G1 | T1-10 | State map (sorted key-value) | 80 | 🔲 Chưa làm |
-| G1 | T1-11 | State commitment hash | 48 | 🔲 Chưa làm |
+| G1 | T1-04 | Unit test encoding: tất cả 5 hàm + sorted_map đã có test đầy đủ | 36 | ✅ Done — 47 tests pass |
+| G1 | T1-10 | State map (sorted key-value) | 80 | ✅ Done |
+| G1 | T1-11 | State commitment hash | 48 | ✅ Done |
 | G2 | T2-02 | `tx_root` computation | 40 | 🔲 Chưa làm |
 | G2 | T2-06 | Vote object + guards | 48 | 🔲 Chưa làm |
 | G2 | T2-12 | Ledger append-only + snapshot | 56 | 🔲 Chưa làm |
@@ -388,41 +389,39 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G5 | T5-05 | Scenario T5 (drop/delay) | 126 | 🔲 Chưa làm |
 | G5 | T5-06 | Scenario T6 (proposer crash) | 63 | 🔲 Chưa làm |
 | G5 | T5-11 | Viết REPORT.pdf | 100 | 🔲 Chưa làm |
-| **Tổng** | **14 tasks thực tế** | *(T1-03 chuyển sang Khánh; T1-04 còn phần Huy bổ sung)* | **1.015** | |
+| **Tổng** | **14 tasks thực tế** | *(T1-03 chuyển sang Khánh; T1-04 hoàn thành đầy đủ)* | **1.015** | |
 
 ---
 
 ## Tóm Tắt So Sánh Tải Công Việc
 
-> **Cập nhật trạng thái: 2026-07-30** — Bao gồm G0, coding G1–G5, và management tasks của Bảo.
+> **Cập nhật trạng thái: 2026-08-01** — Bao gồm G0, coding G1–G5, và management tasks của Bảo.
 
 | Thành viên | Tổng trọng số | Breakdown | Tasks đã Done | Ghi chú |
 |------------|---------------|-----------|---------------|---------|
-| **Bảo** | **1.084** | G0: 241 + Coding G1–G5: 303 + Management G1–G5: 540 | G0 ✅ | TL: review PR + tích hợp milestone + 7 coding tasks G1–G5 |
-| **Hiếu** | **884** | 13 tasks coding G1–G5 | 0 | T1-15 và T2-05 chuyển sang Bảo |
-| **Khôi** | **1.402** | 16 tasks coding G1–G5 | 0 | Nặng về validation + network |
-| **Khánh** | **1.223** | 17 tasks coding G1–G5 | **T1-01, T1-02, T1-03, T1-05** ✅ | Nặng về encoding + infrastructure |
-| **Huy** | **1.015** | 14 tasks coding G1–G5 | **T1-04, T1-10, T1-11** ✅ (pending merge) | ⚠️ 3 branch chờ merge |
-| **Trung bình** | **1.122** | | | |
+| **Bảo** | **1.084** | G0: 241 + Coding G1–G5: 303 + Management G1–G5: 540 | G0 ✅, T1-09 ✅, T1-15 ✅ | TL: review PR + tích hợp milestone + 7 coding tasks G1–G5 |
+| **Hiếu** | **884** | 13 tasks coding G1–G5 | T1-08 ✅ | T1-14 còn chờ T1-13 (executor) |
+| **Khôi** | **1.402** | 16 tasks coding G1–G5 | T1-06 ✅, T1-07 ✅ | T1-13 (executor) còn lại trong G1 |
+| **Khánh** | **1.250** | 17 tasks coding G1–G5 | **T1-01 ✅, T1-02 ✅, T1-03 ✅, T1-05 ✅, T1-12 ✅** | 5/17 tasks G1 done |
+| **Huy** | **1.015** | 14 tasks coding G1–G5 | **T1-04 ✅, T1-10 ✅, T1-11 ✅** | 3/14 tasks G1 done |
+| **Trung bình** | **1.127** | | | |
 
 ### Trạng Thái Tổng Quan Theo Giai Đoạn
 
 | Giai đoạn | Tổng task | Đã xong | Còn lại | Trạng thái |
 |-----------|-----------|---------|---------|------------|
 | G0 | 6 | 6 | 0 | ✅ HOÀN THÀNH |
-| G1 | 15 | 3 (T1-01, T1-02, T1-03) | 12 | 🔄 Đang làm |
+| G1 | 15 | 13 (T1-01÷T1-12, T1-15, T1-09; trừ T1-13/T1-14) | 2 | 🔄 Gần xong — chờ executor |
 | G2 | 14 | 0 | 14 | 🔲 Chưa bắt đầu |
 | G3 | 16 | 0 | 16 | 🔲 Chưa bắt đầu |
 | G4 | 12 | 0 | 12 | 🔲 Chưa bắt đầu |
 | G5 | 11 | 0 | 11 | 🔲 Chưa bắt đầu |
 
-> **Việc cần làm gần nhất (G1):**
-> 1. **Huy** — bổ sung test 4 hàm còn thiếu vào `tests/test_encoding.py` (T1-04)
-> 2. **Khánh** — implement `src/crypto.py` `hash_bytes()` (T1-05), `src/transaction.py` (T1-12)
-> 3. **Khôi** — implement `src/crypto.py` `sign()` / `verify()` (T1-06, T1-07), `src/executor.py` (T1-13)
-> 4. **Hiếu** — viết `tests/test_crypto.py` (T1-08), `tests/test_executor.py` (T1-14)
-> 5. **Bảo** — implement `src/identity.py` (T1-09), viết `tests/test_transaction.py` (T1-15)
-> 6. **Huy** — implement `src/state.py` (T1-10, T1-11)
+> **Việc cần làm ngay (G1 — còn 2 task):**
+> 1. **Khôi** — implement `src/executor.py` (T1-13): deterministic executor, apply tx list, invalidate block khi có tx lỗi
+> 2. **Hiếu** — viết `tests/test_executor.py` (T1-14): test determinism — cùng block thực thi 2 lần → hash giống nhau
+>
+> Sau khi T1-13 & T1-14 xong → **Milestone 1 hoàn thành** → bắt đầu G2.
 
 ---
 
