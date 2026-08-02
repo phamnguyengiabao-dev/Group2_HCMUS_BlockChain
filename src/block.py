@@ -7,6 +7,9 @@ T2-01:
 - Canonical signed header encoding
 - Ed25519 header signing
 - block_hash computation
+
+T2-02:
+- tx_root computation
 """
 
 from __future__ import annotations
@@ -24,6 +27,52 @@ from src.encoding import (
 HASH_SIZE = 32
 PUBLIC_KEY_SIZE = 32
 SIGNATURE_SIZE = 64
+
+
+def compute_tx_root(tx_ids: list[bytes]) -> bytes:
+    """
+    Compute the transaction root commitment for a block body.
+
+    tx_root =
+        SHA256(
+            encode_uint64(count)
+            || tx_id[0] || tx_id[1] || ... || tx_id[count - 1]
+        )
+
+    `tx_ids` are hashed in the given order (canonical block body order),
+    not re-sorted, so tx_root is sensitive to transaction ordering. An
+    empty block commits to SHA256(count=0), the count prefix alone.
+
+    Args:
+        tx_ids: Raw 32-byte tx_id values, in canonical block body order.
+
+    Returns:
+        Raw 32-byte SHA-256 digest.
+
+    Raises:
+        ValueError: If any tx_id is not exactly HASH_SIZE bytes.
+    """
+
+    payload = bytearray(encode_uint64(len(tx_ids)))
+
+    for tx_id in tx_ids:
+        if not isinstance(tx_id, (bytes, bytearray)) or len(tx_id) != HASH_SIZE:
+            raise ValueError(
+                f"tx_id must be exactly {HASH_SIZE} bytes, got {tx_id!r}"
+            )
+        payload += tx_id
+
+    return hash_bytes(bytes(payload))
+
+
+def compute_tx_root_hex(tx_ids: list[bytes]) -> str:
+    """
+    Return the tx_root as lowercase hexadecimal.
+
+    Hex is only used for logs or UI.
+    """
+
+    return compute_tx_root(tx_ids).hex()
 
 
 @dataclass(frozen=True, slots=True)

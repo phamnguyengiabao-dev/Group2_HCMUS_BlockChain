@@ -1,6 +1,8 @@
 """
-Tests for T2-01 BlockHeader.
+Tests for T2-01 BlockHeader and T2-02 tx_root computation.
 """
+
+import pytest
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
@@ -12,8 +14,9 @@ from cryptography.hazmat.primitives.serialization import (
     PublicFormat,
 )
 
-from src.block import BlockHeader
+from src.block import BlockHeader, compute_tx_root, compute_tx_root_hex
 from src.crypto import hash_bytes, verify
+from src.encoding import encode_uint64
 
 
 def make_key_pair() -> tuple[bytes, bytes]:
@@ -159,3 +162,83 @@ def test_block_hash_hex_is_lowercase():
 
     assert len(result) == 64
     assert result == result.lower()
+
+
+def fake_tx_id(seed: int) -> bytes:
+    """A deterministic 32-byte stand-in for a real tx_id."""
+    return hash_bytes(f"tx-{seed}".encode("utf-8"))
+
+
+def test_tx_root_empty_block_is_hash_of_count_zero():
+    assert (
+        compute_tx_root([])
+        == hash_bytes(encode_uint64(0))
+    )
+
+
+def test_tx_root_returns_32_bytes():
+    tx_ids = [fake_tx_id(0), fake_tx_id(1)]
+
+    assert len(compute_tx_root(tx_ids)) == 32
+
+
+def test_tx_root_matches_manual_concatenation():
+    tx_ids = [fake_tx_id(0), fake_tx_id(1), fake_tx_id(2)]
+
+    expected = hash_bytes(
+        encode_uint64(len(tx_ids))
+        + tx_ids[0]
+        + tx_ids[1]
+        + tx_ids[2]
+    )
+
+    assert compute_tx_root(tx_ids) == expected
+
+
+def test_tx_root_is_deterministic():
+    tx_ids = [fake_tx_id(0), fake_tx_id(1)]
+
+    assert (
+        compute_tx_root(tx_ids)
+        == compute_tx_root(tx_ids)
+    )
+
+
+def test_tx_root_is_sensitive_to_order():
+    tx_ids = [fake_tx_id(0), fake_tx_id(1)]
+    reordered = [fake_tx_id(1), fake_tx_id(0)]
+
+    assert (
+        compute_tx_root(tx_ids)
+        != compute_tx_root(reordered)
+    )
+
+
+def test_tx_root_is_sensitive_to_count():
+    tx_ids = [fake_tx_id(0), fake_tx_id(0)]
+
+    assert (
+        compute_tx_root(tx_ids[:1])
+        != compute_tx_root(tx_ids)
+    )
+
+
+def test_tx_root_differs_from_empty_when_nonempty():
+    assert (
+        compute_tx_root([fake_tx_id(0)])
+        != compute_tx_root([])
+    )
+
+
+def test_tx_root_rejects_wrong_length_tx_id():
+    with pytest.raises(ValueError):
+        compute_tx_root([b"\x00" * 31])
+
+
+def test_tx_root_hex_matches_raw_digest():
+    tx_ids = [fake_tx_id(0)]
+
+    assert (
+        compute_tx_root_hex(tx_ids)
+        == compute_tx_root(tx_ids).hex()
+    )
