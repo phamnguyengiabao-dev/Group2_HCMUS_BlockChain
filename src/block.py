@@ -10,11 +10,18 @@ T2-01:
 
 T2-02:
 - tx_root computation
+
+T2-04: Validate block body
+- tx_root computed from the body matches header.tx_root
+- Every transaction is valid and applies in order
+- The resulting post-state hash matches header.state_hash
+
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 from src.crypto import hash_bytes, sign
 from src.encoding import (
@@ -22,7 +29,9 @@ from src.encoding import (
     encode_str,
     encode_uint64,
 )
-
+from src.state import State
+from src.transaction import Transaction
+from src.executor import ExecutionConfig, execute_block
 
 HASH_SIZE = 32
 PUBLIC_KEY_SIZE = 32
@@ -203,3 +212,93 @@ class BlockHeader:
             proposer_pubkey=proposer_pubkey,
             signature=signature,
         )
+
+    
+@dataclass(frozen=True)
+class BlockBodyRejection:
+    """
+    Block-body-level rejection
+
+    code is one of:
+        TX_ROOT_MISMATCH                  computed tx_root != header.tx_root 
+        <executor error_reason string>    a tx failed validation             
+        STATE_HASH_MISMATCH               computed post-state hash != header
+    """
+    code: str
+    detail: str
+    error_tx_index: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class BlockValidationResult:
+    success: bool
+    state: Optional[State] = None
+    nonces: Optional[Dict[bytes, int]] = None
+    applied_tx_ids: List[bytes] = field(default_factory=list)
+    rejection: Optional[BlockBodyRejection] = None
+
+
+def validate_block_body(
+    header: BlockHeader,
+    transactions: List[Transaction],
+    parent_state: State,
+    parent_nonces: Dict[bytes, int],
+    config: ExecutionConfig,
+) -> BlockValidationResult:
+    """
+    Validate a block body against its (already header-validated) header.
+        - tx_root computed from the body matches header.tx_root
+        - every transaction is valid and applies in order
+        - the resulting post-state hash matches header.state_hash
+
+    """
+    # Check if tx_root match
+    tx_ids = [tx.tx_id() for tx in transactions]
+    computed_tx_root = compute_tx_root(tx_ids)
+    if computed_tx_root != header.tx_root:
+        return BlockValidationResult(
+            success=False,
+            rejection=BlockBodyRejection(
+                code="TX_ROOT_MISMATCH",
+                detail=(
+                    f"computed tx_root {computed_tx_root.hex()} != "
+                    f"header tx_root {header.tx_root.hex()}"
+                ),
+            ),
+        )
+
+    # Check if every tx valid, applied in order onto parent_state.
+    result = execute_block(transactions, parent_state, parent_nonces, config)
+    if not result.success:
+        return BlockValidationResult(
+            success=False,
+            rejection=BlockBodyRejection(
+                code=result.error_reason,
+                detail=(
+                    f"tx at index {result.error_tx_index} rejected: "
+                    f"{result.error_reason}"
+                ),
+                error_tx_index=result.error_tx_index,
+            ),
+        )
+
+    # Check post-state hash must match header.state_hash.
+    computed_state_hash = result.post_state.state_hash()
+    if computed_state_hash != header.state_hash:
+        return BlockValidationResult(
+            success=False,
+            rejection=BlockBodyRejection(
+                code="STATE_HASH_MISMATCH",
+                detail=(
+                    f"computed state_hash {computed_state_hash.hex()} != "
+                    f"header state_hash {header.state_hash.hex()}"
+                ),
+            ),
+        )
+
+    return BlockValidationResult(
+        success=True,
+        state=result.post_state,
+        nonces=result.nonces,
+        applied_tx_ids=result.applied_tx_ids,
+    )
