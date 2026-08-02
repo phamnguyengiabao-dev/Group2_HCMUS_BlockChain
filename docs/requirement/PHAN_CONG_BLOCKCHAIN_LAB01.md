@@ -101,11 +101,11 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | T1-10 | Sorted key-value state map: insert/get/delete; dùng sorted dict để đảm bảo thứ tự | `src/state.py` | **Huy** | 8 | 5 | 2 | 80 | ✅ Done — `src/state.py` đầy đủ |
 | T1-11 | State commitment: `SHA256(encode(entry_count) \|\| sorted(key, value_bytes) pairs)` | `src/state.py` | **Huy** | 8 | 6 | 1 | 48 | ✅ Done — `state_hash()` implement |
 | T1-12 | Transaction object + validation: chain_id, nonce, namespace prefix, size limits, signature | `src/transaction.py` | **Khánh** | 9 | 7 | 2 | 126 | ✅ Done — 8 tests pass |
-| T1-13 | Deterministic executor: apply tx list theo thứ tự → post-state + updated nonces; tx không hợp lệ → invalidate toàn block | `src/executor.py` | **Khôi** | 9 | 8 | 2 | 144 | 🔲 Chưa làm — file chưa tồn tại |
-| T1-14 | Unit test determinism: cùng block thực thi 2 lần → byte/hash giống nhau | `tests/test_executor.py` | **Hiếu** | 9 | 5 | 1 | 45 | 🔲 Chưa làm — file chưa tồn tại |
+| T1-13 | Deterministic executor: apply tx list theo thứ tự → post-state + updated nonces; tx không hợp lệ → invalidate toàn block | `src/executor.py` | **Khôi** | 9 | 8 | 2 | 144 | ✅ Done — 22 tests pass (P1 atomicity, P2 determinism, P3 no-double-apply, P4 order) |
+| T1-14 | Unit test determinism: cùng block thực thi 2 lần → byte/hash giống nhau | `tests/test_executor.py` | **Hiếu** | 9 | 5 | 1 | 45 | ✅ Done — 22 tests pass |
 | T1-15 | Unit test transaction: namespace sai, nonce sai, tx trùng, kích thước vượt giới hạn → reject | `tests/test_transaction.py` | ~~Hiếu~~ → **Bảo** | 9 | 5 | 1 | 45 | ✅ Done — 8 tests pass |
 
-**🔄 Milestone 1 gần xong:** 13/15 task pass (88 tests xanh). Còn T1-13 (`src/executor.py`) và T1-14 (`tests/test_executor.py`) — do **Khôi** và **Hiếu** thực hiện.
+**✅ Milestone 1 HOÀN THÀNH:** 15/15 task pass (110 tests xanh). T1-13 (`src/executor.py`) và T1-14 (`tests/test_executor.py`) hoàn thành ngày 2026-08-02.
 
 ---
 
@@ -310,7 +310,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | Giai đoạn | Task | Mô tả ngắn | Trọng số | Trạng thái |
 |-----------|------|------------|----------|------------|
 | G1 | T1-08 | Unit test crypto | 45 | ✅ Done |
-| G1 | T1-14 | Unit test determinism executor | 45 | 🔲 Chưa làm — chờ T1-13 |
+| G1 | T1-14 | Unit test determinism executor | 45 | ✅ Done — 22 tests pass |
 | G2 | T2-10 | Unit test vote_set | 54 | 🔲 Chưa làm |
 | G2 | T2-13 | Atomic persist ledger | 72 | 🔲 Chưa làm |
 | G3 | T3-05 | Deterministic scheduler | 126 | 🔲 Chưa làm |
@@ -330,7 +330,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 |-----------|------|------------|----------|------------|
 | G1 | T1-06 | Ed25519 `sign()` với domain separation | 54 | ✅ Done |
 | G1 | T1-07 | Ed25519 `verify()` | 54 | ✅ Done |
-| G1 | T1-13 | Deterministic executor | 144 | 🔲 Chưa làm |
+| G1 | T1-13 | Deterministic executor | 144 | ✅ Done — 22 tests pass |
 | G2 | T2-03 | Header validation guards (F-26) | 126 | 🔲 Chưa làm |
 | G2 | T2-04 | Block Body + candidate validation | 126 | 🔲 Chưa làm |
 | G2 | T2-08 | Duplicate + equivocation detection | 56 | 🔲 Chưa làm |
@@ -395,13 +395,13 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 ## Tóm Tắt So Sánh Tải Công Việc
 
-> **Cập nhật trạng thái: 2026-08-01** — Bao gồm G0, coding G1–G5, và management tasks của Bảo.
+> **Cập nhật trạng thái: 2026-08-02** — G1 hoàn thành 100%. Bao gồm G0, coding G1–G5, và management tasks của Bảo.
 
 | Thành viên | Tổng trọng số | Breakdown | Tasks đã Done | Ghi chú |
 |------------|---------------|-----------|---------------|---------|
 | **Bảo** | **1.084** | G0: 241 + Coding G1–G5: 303 + Management G1–G5: 540 | G0 ✅, T1-09 ✅, T1-15 ✅ | TL: review PR + tích hợp milestone + 7 coding tasks G1–G5 |
-| **Hiếu** | **884** | 13 tasks coding G1–G5 | T1-08 ✅ | T1-14 còn chờ T1-13 (executor) |
-| **Khôi** | **1.402** | 16 tasks coding G1–G5 | T1-06 ✅, T1-07 ✅ | T1-13 (executor) còn lại trong G1 |
+| **Hiếu** | **884** | 13 tasks coding G1–G5 | T1-08 ✅, **T1-14 ✅** | T1-14 hoàn thành (22 tests pass) |
+| **Khôi** | **1.402** | 16 tasks coding G1–G5 | T1-06 ✅, T1-07 ✅, **T1-13 ✅** | T1-13 executor hoàn thành trong G1 |
 | **Khánh** | **1.250** | 17 tasks coding G1–G5 | **T1-01 ✅, T1-02 ✅, T1-03 ✅, T1-05 ✅, T1-12 ✅** | 5/17 tasks G1 done |
 | **Huy** | **1.015** | 14 tasks coding G1–G5 | **T1-04 ✅, T1-10 ✅, T1-11 ✅** | 3/14 tasks G1 done |
 | **Trung bình** | **1.127** | | | |
@@ -411,17 +411,15 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | Giai đoạn | Tổng task | Đã xong | Còn lại | Trạng thái |
 |-----------|-----------|---------|---------|------------|
 | G0 | 6 | 6 | 0 | ✅ HOÀN THÀNH |
-| G1 | 15 | 13 (T1-01÷T1-12, T1-15, T1-09; trừ T1-13/T1-14) | 2 | 🔄 Gần xong — chờ executor |
+| G1 | 15 | 15 (tất cả) | 0 | ✅ HOÀN THÀNH — 110 tests xanh |
 | G2 | 14 | 0 | 14 | 🔲 Chưa bắt đầu |
 | G3 | 16 | 0 | 16 | 🔲 Chưa bắt đầu |
 | G4 | 12 | 0 | 12 | 🔲 Chưa bắt đầu |
 | G5 | 11 | 0 | 11 | 🔲 Chưa bắt đầu |
 
-> **Việc cần làm ngay (G1 — còn 2 task):**
-> 1. **Khôi** — implement `src/executor.py` (T1-13): deterministic executor, apply tx list, invalidate block khi có tx lỗi
-> 2. **Hiếu** — viết `tests/test_executor.py` (T1-14): test determinism — cùng block thực thi 2 lần → hash giống nhau
+> **✅ G1 hoàn thành (2026-08-02):** T1-13 (`src/executor.py`) và T1-14 (`tests/test_executor.py`) đã được implement và pass 22 tests. Tổng cộng 110 tests xanh.
 >
-> Sau khi T1-13 & T1-14 xong → **Milestone 1 hoàn thành** → bắt đầu G2.
+> **Việc cần làm tiếp theo:** Bắt đầu **Giai đoạn 2** — Data Model và Xác Thực (T2-01 → T2-14).
 
 ---
 
