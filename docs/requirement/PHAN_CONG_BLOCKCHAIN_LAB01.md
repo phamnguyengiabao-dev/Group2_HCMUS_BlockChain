@@ -117,13 +117,13 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 ### 2A — Block Header & Body (`src/block.py`, `src/block_validator.py`)
 
-| Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số |
-|---------|-----------|------|-------|---------|--------|------|----------|
-| T2-01 | Block Header object với đúng thứ tự fields theo spec; `block_hash = SHA256(canonical signed header)` | `src/block.py` | **Khánh** | 9 | 7 | 2 | 126 |
-| T2-02 | `tx_root = SHA256(encode(count) \|\| tx_id[0] \|\| tx_id[1] \|\| ...)`; block rỗng = hash(count=0) | `src/block.py` | **Huy** | 8 | 5 | 1 | 40 |
-| T2-03 | Header validation guards (F-26): chain_id, height, round, parent_hash, expected proposer, HEADER domain signature | `src/block_validator.py` | **Khôi** | 9 | 7 | 2 | 126 |
-| T2-04 | Block Body object + full candidate validation (F-27–F-29): tx_root khớp, all txs valid, post-state hash khớp | `src/block.py` | **Khôi** | 9 | 7 | 2 | 126 |
-| T2-05 | Unit test block: parent sai / proposer sai / height sai / tx_root sai / state_hash sai / signature sai → tất cả đều bị bắt | `tests/test_block.py` | ~~Hiếu~~ → **Bảo** | 9 | 6 | 1 | 54 |
+| Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
+|---------|-----------|------|-------|---------|--------|------|----------|------------|
+| T2-01 | Block Header object với đúng thứ tự fields theo spec; `block_hash = SHA256(canonical signed header)` | `src/block.py` | **Khánh** | 9 | 7 | 2 | 126 | ✅ Done (PR #8) |
+| T2-02 | `tx_root = SHA256(encode(count) \|\| tx_id[0] \|\| tx_id[1] \|\| ...)`; block rỗng = hash(count=0) | `src/block.py` | **Huy** | 8 | 5 | 1 | 40 | ✅ Done (PR #10) |
+| T2-03 | Header validation guards (F-26): chain_id, height, round, parent_hash, expected proposer, HEADER domain signature | `src/block_validator.py` | **Khôi** | 9 | 7 | 2 | 126 | ✅ Done (PR #10) |
+| T2-04 | Block Body object + full candidate validation (F-27–F-29): tx_root khớp, all txs valid, post-state hash khớp | `src/block.py` | **Khôi** | 9 | 7 | 2 | 126 | ✅ Done (PR #10) |
+| T2-05 | Unit test block: parent sai / proposer sai / height sai / tx_root sai / state_hash sai / signature sai → tất cả đều bị bắt | `tests/test_block.py` | ~~Hiếu~~ → **Bảo** | 9 | 6 | 1 | 54 | ✅ Done — 35 tests pass |
 
 ### 2B — Vote & VoteSet (`src/vote.py`, `src/vote_set.py`)
 
@@ -275,7 +275,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 |-----------|------|------------|----------|------------|
 | G1 | T1-09 | Load/validate identity fixtures | 21 | ✅ Done |
 | G1 | T1-15 | Unit test transaction rejection *(chuyển từ Hiếu)* | 45 | ✅ Done |
-| G2 | T2-05 | Unit test block validation *(chuyển từ Hiếu)* | 54 | 🔲 Chưa làm |
+| G2 | T2-05 | Unit test block validation *(chuyển từ Hiếu)* | 54 | ✅ Done — 35 tests pass |
 | G2 | T2-09 | Quorum counting `has_quorum()` | 54 | 🔲 Chưa làm |
 | G3 | T3-09 | Peer blocking/unblocking | 30 | 🔲 Chưa làm |
 | G4 | T4-08 | Round change logic | 63 | 🔲 Chưa làm |
