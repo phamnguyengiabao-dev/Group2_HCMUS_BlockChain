@@ -16,7 +16,12 @@ Out of scope here (extended in this same file by later tasks):
 
 from __future__ import annotations
 
+import base64
+import json
+import os
 from dataclasses import dataclass
+from typing import Any
+from pathlib import Path
 
 from src.block import BlockHeader
 from src.state import State
@@ -54,11 +59,21 @@ class Ledger:
           caller mutating what it got back cannot corrupt ledger history.
     """
 
-    __slots__ = ("_chain_id", "_entries")
+    __slots__ = ("_chain_id", "_entries", "_storage_path")
 
-    def __init__(self, chain_id: str) -> None:
+    def __init__(
+        self,
+        chain_id: str,
+        storage_path: str | os.PathLike[str] | None = None,
+    ) -> None:
         self._chain_id = chain_id
         self._entries: dict[int, LedgerEntry] = {}
+        self._storage_path = Path(storage_path) if storage_path is not None else None
+
+    @property
+    def storage_path(self) -> Path | None:
+        """Path used for the optional atomic finalized snapshot."""
+        return self._storage_path
 
     @property
     def chain_id(self) -> str:
@@ -137,8 +152,73 @@ class Ledger:
             nonces=dict(nonces),
         )
 
+        # Persist before publishing the entry in memory.  If serialization,
+        # fsync, or replace fails, the in-memory ledger remains unchanged.
+        self._persist_entry(entry)
         self._entries[header.height] = entry
         return entry
+
+    @staticmethod
+    def _hex(value: bytes) -> str:
+        return value.hex()
+
+    def _snapshot_payload(self, entry: LedgerEntry) -> dict[str, Any]:
+        """Build the deterministic F-52 snapshot representation."""
+        header = entry.header
+        return {
+            "finalized_height": entry.height,
+            "finalized_hash": self._hex(entry.block_hash),
+            "state": [
+                {"key": key, "value": base64.b64encode(value).decode("ascii")}
+                for key, value in entry.state.items()
+            ],
+            "nonces": [
+                {"sender_pubkey": self._hex(pubkey), "nonce": nonce}
+                for pubkey, nonce in sorted(
+                    entry.nonces.items(), key=lambda item: item[0]
+                )
+            ],
+            "block": {
+                "header": {
+                    "chain_id": header.chain_id,
+                    "height": header.height,
+                    "round": header.round,
+                    "parent_hash": self._hex(header.parent_hash),
+                    "tx_root": self._hex(header.tx_root),
+                    "state_hash": self._hex(header.state_hash),
+                    "proposer_pubkey": self._hex(header.proposer_pubkey),
+                    "signature": self._hex(header.signature),
+                },
+                "applied_tx_ids": [
+                    self._hex(tx_id) for tx_id in entry.applied_tx_ids
+                ],
+            },
+        }
+
+    def _persist_entry(self, entry: LedgerEntry) -> None:
+        """Atomically replace the snapshot file for a finalized entry."""
+        if self._storage_path is None:
+            return
+
+        path = self._storage_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = json.dumps(
+            self._snapshot_payload(entry),
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8") + b"\n"
+        temp_path = path.with_name(f".{path.name}.tmp")
+        try:
+            with temp_path.open("wb") as handle:
+                handle.write(payload)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temp_path, path)
+        finally:
+            try:
+                temp_path.unlink()
+            except FileNotFoundError:
+                pass
 
     def get_entry(self, height: int) -> LedgerEntry:
         """Return the finalized entry at `height`. Raises KeyError if absent."""

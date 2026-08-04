@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -335,3 +337,49 @@ def test_iteration_is_in_ascending_height_order():
     )
 
     assert list(ledger) == [1, 2, 3]
+
+
+# ============================================================
+# Atomic finalized snapshot persistence (T2-13 / F-52)
+# ============================================================
+
+def test_finalize_atomically_persists_f52_snapshot(tmp_path):
+    private_key, public_key = make_key_pair()
+    snapshot = tmp_path / "ledger.json"
+    ledger = Ledger(CHAIN_ID, storage_path=snapshot)
+    state = State()
+    state.insert("owner/key", b"value")
+    header = make_header(1, b"\x00" * 32, private_key, public_key, state)
+
+    ledger.finalize(
+        header=header,
+        applied_tx_ids=[b"\x11" * 32],
+        state=state,
+        nonces={public_key: 2},
+    )
+
+    assert snapshot.exists()
+    payload = json.loads(snapshot.read_text(encoding="utf-8"))
+    assert payload["finalized_height"] == 1
+    assert payload["finalized_hash"] == header.block_hash().hex()
+    assert payload["state"] == [{"key": "owner/key", "value": "dmFsdWU="}]
+    assert payload["nonces"] == [{"sender_pubkey": public_key.hex(), "nonce": 2}]
+    assert payload["block"]["header"]["signature"] == header.signature.hex()
+    assert payload["block"]["applied_tx_ids"] == [(b"\x11" * 32).hex()]
+
+
+def test_failed_snapshot_write_does_not_publish_finalized_entry(tmp_path, monkeypatch):
+    private_key, public_key = make_key_pair()
+    snapshot = tmp_path / "ledger.json"
+    ledger = Ledger(CHAIN_ID, storage_path=snapshot)
+    header = make_header(1, b"\x00" * 32, private_key, public_key)
+
+    def fail_replace(*args):
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr("src.ledger.os.replace", fail_replace)
+    with pytest.raises(OSError, match="replace failure"):
+        ledger.finalize(header=header, applied_tx_ids=[], state=State(), nonces={})
+
+    assert ledger.finalized_height == 0
+    assert len(ledger) == 0
