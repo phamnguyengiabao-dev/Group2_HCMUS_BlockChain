@@ -209,12 +209,12 @@ TASKS = [
   ('MGMT','[G1] MG-PR — Review & approve toàn bộ PR giai đoạn 1',
    'Đọc diff, kiểm tra correctness, canonical sort, test coverage cho tất cả PR G1',
    'Đọc và comment từng PR: 40%\nKiểm tra correctness + canonical: 30%\nApprove/request changes: 30%',
-   'Áp dụng G1→G5 (5 × 80 = 400 tổng management PR)','Bảo',8,5,2,'',0.0,'G1'),
+   'Áp dụng G1→G5 (5 × 80 = 400 tổng management PR)','Bảo',8,5,2,'G1 hoàn thành — 110 tests pass',1.0,'G1'),
 
   ('MGMT','[G1] MG-INT — Tích hợp milestone 1',
    'Merge branches, resolve conflicts, chạy full test suite G1, update trạng thái tài liệu',
    'Merge không conflict: 34%\nFull test suite pass: 33%\nUpdate docs trạng thái: 33%',
-   'Áp dụng G1→G5 (5 × 28 = 140 tổng management INT)','Bảo',7,4,1,'',0.0,'G1'),
+   'Áp dụng G1→G5 (5 × 28 = 140 tổng management INT)','Bảo',7,4,1,'G1 integrated — 110 tests pass',1.0,'G1'),
 
 
   # ══════════════════════════════════════════════════════════════════════════════
@@ -226,43 +226,43 @@ TASKS = [
   ('T2-01','Block Header object',
    'src/block.py — fields đúng thứ tự spec; block_hash = SHA256(canonical signed header)',
    'Fields đúng thứ tự: 50%\nblock_hash = SHA256: 50%',
-   '','Khánh',9,7,2,'',0.0,'G2'),
+   'Done — commit df74115, merged PR #8','Khánh',9,7,2,'BlockHeader + create_signed + block_hash',1.0,'G2'),
 
   ('T2-02','tx_root computation',
    'src/block.py — SHA256(encode(count) || tx_id[0] || ...); block rỗng = hash(count=0)',
    'Tính đúng khi có txs: 50%\nBlock rỗng hash(count=0): 50%',
-   '','Huy',8,5,1,'',0.0,'G2'),
+   'Done — commit 996ec2a, merged PR #10','Huy',8,5,1,'compute_tx_root() implemented',1.0,'G2'),
 
   ('T2-03','Header validation guards (F-26)',
    'src/block_validator.py — chain_id, height, round, parent_hash, proposer, HEADER domain sig',
    'chain_id: 17%\nheight: 17%\nround: 16%\nparent_hash: 17%\nproposer: 17%\nHEADER sig: 16%',
-   '','Khôi',9,7,2,'',0.0,'G2'),
+   'Done — commit a2639a0, merged PR #10','Khôi',9,7,2,'validate_header() — 6 guards',1.0,'G2'),
 
   ('T2-04','Block Body + candidate validation (F-27–F-29)',
    'src/block.py — tx_root khớp, all txs valid, post-state hash khớp',
    'tx_root khớp: 34%\nAll txs valid: 33%\npost-state hash: 33%',
-   '','Khôi',9,7,2,'',0.0,'G2'),
+   'Done — commit a2639a0, merged PR #10','Khôi',9,7,2,'validate_block_body() implemented',1.0,'G2'),
 
   ('T2-05','Unit test block validation',
    'tests/test_block.py — parent/proposer/height/tx_root/state_hash/sig sai → bắt được',
    'parent_hash sai: 17%\nproposer sai: 17%\nheight sai: 17%\ntx_root sai: 17%\nstate_hash sai: 16%\nsig sai: 16%',
-   '35 tests pass (chuyển từ Hiếu → Bảo)','Bảo',9,6,1,'35 tests pass',1.0,'G2'),
+   'Done — commit 1389793, merged PR #9; 35+ tests pass (chuyển từ Hiếu → Bảo)','Bảo',9,6,1,'35+ tests pass',1.0,'G2'),
 
   # ── 2B: Vote & VoteSet ──
   ('T2-06','Vote object + validation guards (F-40)',
    'src/vote.py — chain_id, member check, VOTE domain sig, height/round/phase',
    'chain_id: 25%\nmember check: 25%\nVOTE domain sig: 25%\nheight/round/phase: 25%',
-   '','Huy',8,6,1,'',0.0,'G2'),
+   'Done — commit 996ec2a, merged PR #10; 14 tests pass','Huy',8,6,1,'Vote.validate() — 14 tests pass',1.0,'G2'),
 
   ('T2-07','VoteSet storage',
    'src/vote_set.py — key (height, round, phase, validator_pubkey)',
    'Key 4 thành phần: 50%\nStore/retrieve đúng: 50%',
-   '','Khánh',8,6,1,'',0.0,'G2'),
+   'Done — commit b8ec92b, merged PR #9','Khánh',8,6,1,'VoteSet.add()/get()/votes()',1.0,'G2'),
 
   ('T2-08','Duplicate + equivocation detection',
    'src/vote_set.py — duplicate bỏ qua; equivocation log + giữ vote đầu',
    'Duplicate bỏ qua: 50%\nEquivocation log + giữ vote đầu: 50%',
-   '','Khôi',8,7,1,'',0.0,'G2'),
+   'Done — commit 3c7edbc (Khoi branch), restored to Main; 4 tests pass','Khôi',8,7,1,'VoteOutcome enum + EquivocationRecord — 4 tests pass',1.0,'G2'),
 
   ('T2-09','Quorum counting has_quorum()',
    'src/vote_set.py — True khi >= 2f+1 validators riêng biệt',
@@ -283,7 +283,7 @@ TASKS = [
   ('T2-12','Ledger append-only + snapshot',
    'src/ledger.py — append-only finalized chain + state snapshot; không rollback',
    'Chỉ append: 50%\nState snapshot: 50%',
-   '','Huy',8,7,1,'',0.0,'G2'),
+   'Done — commit 996ec2a, merged PR #10; 17 tests pass','Huy',8,7,1,'Ledger.finalize() + get_state() — 17 tests pass',1.0,'G2'),
 
   ('T2-13','Atomic persist (F-52)',
    'src/ledger.py — ghi nguyên tử finalized_height, finalized_hash, state, nonces, block',
