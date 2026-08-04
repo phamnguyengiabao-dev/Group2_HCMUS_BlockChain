@@ -139,7 +139,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 | Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
 |---------|-----------|------|-------|---------|--------|------|----------|------------|
-| T2-11 | Block Store: `store_header()`, `store_body()`; enforce header-first rule (F-30) — body chỉ được xử lý sau header hợp lệ | `src/block_store.py` | **Khôi** | 8 | 6 | 1 | 48 | 🔲 Chưa làm |
+| T2-11 | Block Store: `store_header()`, `store_body()`; enforce header-first rule (F-30) — body chỉ được xử lý sau header hợp lệ | `src/block_store.py` | **Khôi** | 8 | 6 | 1 | 48 | ✅ Done (commit `8b522a8`, nhánh Khoi) — 7 tests pass |
 | T2-12 | Ledger/State Store: append-only finalized chain + state snapshot; không bao giờ rollback | `src/ledger.py` | **Huy** | 8 | 7 | 1 | 56 | ✅ Done (commit `996ec2a`, merged PR #10) — 17 tests pass |
 | T2-13 | Atomic persist (F-52): ghi nguyên tử `finalized_height`, `finalized_hash`, state, nonces, block | `src/ledger.py` | **Hiếu** | 9 | 8 | 1 | 72 | 🔲 Chưa làm |
 | T2-14 | Crash recovery (F-53): load từ snapshot, discard unfinalized proposals/votes | `src/ledger.py` | **Khánh** | 9 | 8 | 1 | 72 | 🔲 Chưa làm |
@@ -334,7 +334,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G2 | T2-03 | Header validation guards (F-26) | 126 | ✅ Done (commit `a2639a0`) |
 | G2 | T2-04 | Block Body + candidate validation | 126 | ✅ Done (commit `a2639a0`) |
 | G2 | T2-08 | Duplicate + equivocation detection | 56 | ✅ Done (commit `3c7edbc`, restored to Main) |
-| G2 | T2-11 | Block Store + header-first rule | 48 | 🔲 Chưa làm |
+| G2 | T2-11 | Block Store + header-first rule | 48 | ✅ Done (commit `8b522a8`, nhánh Khoi) — 7 tests pass |
 | G3 | T3-06 | Seeded PRNG | 54 | 🔲 Chưa làm |
 | G3 | T3-11 | Message Router | 112 | 🔲 Chưa làm |
 | G3 | T3-13 | Router không relay invalid object | 32 | 🔲 Chưa làm |
@@ -401,7 +401,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 |------------|---------------|-----------|---------------|---------|
 | **Bảo** | **1.084** | G0: 241 + Coding G1–G5: 303 + Management G1–G5: 540 | G0 ✅, T1-09 ✅, T1-15 ✅, T2-05 ✅, **T2-09 ✅** | TL: review PR + tích hợp milestone + 7 coding tasks G1–G5 |
 | **Hiếu** | **884** | 13 tasks coding G1–G5 | T1-08 ✅, T1-14 ✅, **T2-10 ✅** | G2: T2-13 chưa làm |
-| **Khôi** | **1.402** | 16 tasks coding G1–G5 | T1-06 ✅, T1-07 ✅, T1-13 ✅, **T2-03 ✅, T2-04 ✅**, ⚠️ T2-08 (nhánh chưa merge) | T2-08 cần merge lại vào Main |
+| **Khôi** | **1.402** | 16 tasks coding G1–G5 | T1-06 ✅, T1-07 ✅, T1-13 ✅, **T2-03 ✅, T2-04 ✅, T2-08 ✅**, ⚠️ T2-11 (nhánh Khoi, chưa merge vào Main) | T2-11 cần tạo PR merge vào Main |
 | **Khánh** | **1.250** | 17 tasks coding G1–G5 | T1-01 ✅, T1-02 ✅, T1-03 ✅, T1-05 ✅, T1-12 ✅, **T2-01 ✅, T2-07 ✅** | 7/17 tasks done |
 | **Huy** | **1.015** | 14 tasks coding G1–G5 | T1-04 ✅, T1-10 ✅, T1-11 ✅, **T2-02 ✅, T2-06 ✅, T2-12 ✅** | 6/14 tasks done |
 | **Trung bình** | **1.127** | | | |
