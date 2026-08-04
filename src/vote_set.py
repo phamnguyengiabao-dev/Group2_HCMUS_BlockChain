@@ -7,13 +7,15 @@ Store votes using the key:
     (height, round, phase, validator_pubkey)
 
 T2-08:
-- Duplicate detection: 
-    A re-received vote with the same (height, round, phase, validator_pubkey) and the same block_hash_or_nil 
-    is the same statement arriving twice (network duplication) - ignored silently.
-- Equivocation detection: 
-    A re-received vote with the same key but a different block_hash_or_nil 
-    means this validator signed two conflicting votes for the same slot — Byzantine behavior. 
-    The first vote received is kept; the conflicting vote is rejected and recorded as evidence, not silently dropped.
+- Duplicate detection:
+    A re-received vote with the same (height, round, phase, validator_pubkey) and
+    the same block_hash_or_nil is the same statement arriving twice (network
+    duplication) — ignored silently.
+- Equivocation detection:
+    A re-received vote with the same key but a different block_hash_or_nil
+    means this validator signed two conflicting votes for the same slot —
+    Byzantine behavior. The first vote received is kept; the conflicting vote is
+    rejected and recorded as evidence, not silently dropped.
 """
 from __future__ import annotations
 
@@ -58,12 +60,15 @@ class VoteSet:
 
     def add(self, vote: Vote) -> AddResult:
         """
-        Store a vote under (height, round, phase, validator_pubkey)
+        Store a vote under (height, round, phase, validator_pubkey).
 
         Returns an AddResult describing what happened:
-            ACCEPTED              - first vote seen for this key, stored.
-            DUPLICATE_IGNORED     - same key, same block_hash_or_nil: already stored; ignored, original kept.
-            EQUIVOCATION_DETECTED - same key, different block_hash_or_nil: original kept; evidence recorded and returned, new vote rejected.
+            ACCEPTED              — first vote seen for this key, stored.
+            DUPLICATE_IGNORED     — same key, same block_hash_or_nil: already
+                                    stored; ignored, original kept.
+            EQUIVOCATION_DETECTED — same key, different block_hash_or_nil:
+                                    original kept; evidence recorded and
+                                    returned, new vote rejected.
         """
 
         if not isinstance(vote, Vote):
@@ -85,14 +90,13 @@ class VoteSet:
             return AddResult(outcome=VoteOutcome.ACCEPTED, stored_vote=vote)
 
         if existing.block_hash_or_nil == vote.block_hash_or_nil:
-            # Same statement arriving again -> Ignore
-            # Keep what's already stored.
+            # Same statement arriving again — ignore, keep what's stored.
             return AddResult(
                 outcome=VoteOutcome.DUPLICATE_IGNORED,
                 stored_vote=existing,
             )
 
-        # Same VoteKey, different block_hash_or_nil: equivocation. 
+        # Same VoteKey, different block_hash_or_nil: equivocation.
         # Keep the first vote; reject and record the conflicting one.
         record = EquivocationRecord(
             key=key,
@@ -160,7 +164,7 @@ class VoteSet:
 
         return len(self._votes)
 
-    # -- equivocation evidence ---------------------------
+    # ── equivocation evidence ──────────────────────────────────────────────────
 
     def equivocations(self) -> List[EquivocationRecord]:
         """All equivocation evidence recorded so far, in detection order."""

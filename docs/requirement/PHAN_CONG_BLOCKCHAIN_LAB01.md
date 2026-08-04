@@ -119,30 +119,30 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 | Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
 |---------|-----------|------|-------|---------|--------|------|----------|------------|
-| T2-01 | Block Header object với đúng thứ tự fields theo spec; `block_hash = SHA256(canonical signed header)` | `src/block.py` | **Khánh** | 9 | 7 | 2 | 126 | ✅ Done (PR #8) |
-| T2-02 | `tx_root = SHA256(encode(count) \|\| tx_id[0] \|\| tx_id[1] \|\| ...)`; block rỗng = hash(count=0) | `src/block.py` | **Huy** | 8 | 5 | 1 | 40 | ✅ Done (PR #10) |
-| T2-03 | Header validation guards (F-26): chain_id, height, round, parent_hash, expected proposer, HEADER domain signature | `src/block_validator.py` | **Khôi** | 9 | 7 | 2 | 126 | ✅ Done (PR #10) |
-| T2-04 | Block Body object + full candidate validation (F-27–F-29): tx_root khớp, all txs valid, post-state hash khớp | `src/block.py` | **Khôi** | 9 | 7 | 2 | 126 | ✅ Done (PR #10) |
-| T2-05 | Unit test block: parent sai / proposer sai / height sai / tx_root sai / state_hash sai / signature sai → tất cả đều bị bắt | `tests/test_block.py` | ~~Hiếu~~ → **Bảo** | 9 | 6 | 1 | 54 | ✅ Done — 35 tests pass |
+| T2-01 | Block Header object với đúng thứ tự fields theo spec; `block_hash = SHA256(canonical signed header)` | `src/block.py` | **Khánh** | 9 | 7 | 2 | 126 | ✅ Done (commit `df74115`, merged PR #8) |
+| T2-02 | `tx_root = SHA256(encode(count) \|\| tx_id[0] \|\| tx_id[1] \|\| ...)`; block rỗng = hash(count=0) | `src/block.py` | **Huy** | 8 | 5 | 1 | 40 | ✅ Done (commit `996ec2a`, merged PR #10) |
+| T2-03 | Header validation guards (F-26): chain_id, height, round, parent_hash, expected proposer, HEADER domain signature | `src/block_validator.py` | **Khôi** | 9 | 7 | 2 | 126 | ✅ Done (commit `a2639a0`, merged PR #10) |
+| T2-04 | Block Body object + full candidate validation (F-27–F-29): tx_root khớp, all txs valid, post-state hash khớp | `src/block.py` | **Khôi** | 9 | 7 | 2 | 126 | ✅ Done (commit `a2639a0`, merged PR #10) |
+| T2-05 | Unit test block: parent sai / proposer sai / height sai / tx_root sai / state_hash sai / signature sai → tất cả đều bị bắt | `tests/test_block.py` | ~~Hiếu~~ → **Bảo** | 9 | 6 | 1 | 54 | ✅ Done (commit `1389793`, merged PR #9) |
 
 ### 2B — Vote & VoteSet (`src/vote.py`, `src/vote_set.py`)
 
-| Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số |
-|---------|-----------|------|-------|---------|--------|------|----------|
-| T2-06 | Vote object với tất cả validation guards (F-40): chain_id, member check, VOTE domain signature, height/round/phase khớp | `src/vote.py` | **Huy** | 8 | 6 | 1 | 48 |
-| T2-07 | VoteSet: lưu votes theo key `(height, round, phase, validator_pubkey)` | `src/vote_set.py` | **Khánh** | 8 | 6 | 1 | 48 |
-| T2-08 | Duplicate detection (bỏ qua) và equivocation detection (ghi log, không thay thế vote đầu) trong VoteSet | `src/vote_set.py` | **Khôi** | 8 | 7 | 1 | 56 |
-| T2-09 | Quorum counting: `has_quorum()` chỉ trả True khi có `>= 2f+1` validators **riêng biệt** | `src/vote_set.py` | **Bảo** | 9 | 6 | 1 | 54 |
-| T2-10 | Unit test vote_set: duplicate bỏ qua, non-member từ chối, equivocation log, quorum chỉ đạt đủ validators | `tests/test_vote_set.py` | **Hiếu** | 9 | 6 | 1 | 54 |
+| Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
+|---------|-----------|------|-------|---------|--------|------|----------|------------|
+| T2-06 | Vote object với tất cả validation guards (F-40): chain_id, member check, VOTE domain signature, height/round/phase khớp | `src/vote.py` | **Huy** | 8 | 6 | 1 | 48 | ✅ Done (commit `996ec2a`, merged PR #10) — 14 tests pass |
+| T2-07 | VoteSet: lưu votes theo key `(height, round, phase, validator_pubkey)` | `src/vote_set.py` | **Khánh** | 8 | 6 | 1 | 48 | ✅ Done (commit `b8ec92b`, merged PR #9) |
+| T2-08 | Duplicate detection (bỏ qua) và equivocation detection (ghi log, không thay thế vote đầu) trong VoteSet | `src/vote_set.py` | **Khôi** | 8 | 7 | 1 | 56 | ✅ Done (commit `3c7edbc`, restored to Main) — 4 tests pass |
+| T2-09 | Quorum counting: `has_quorum()` chỉ trả True khi có `>= 2f+1` validators **riêng biệt** | `src/vote_set.py` | **Bảo** | 9 | 6 | 1 | 54 | 🔲 Chưa làm |
+| T2-10 | Unit test vote_set: duplicate bỏ qua, non-member từ chối, equivocation log, quorum chỉ đạt đủ validators | `tests/test_vote_set.py` | **Hiếu** | 9 | 6 | 1 | 54 | 🔲 Chưa làm |
 
 ### 2C — Block Store & Ledger (`src/block_store.py`, `src/ledger.py`)
 
-| Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số |
-|---------|-----------|------|-------|---------|--------|------|----------|
-| T2-11 | Block Store: `store_header()`, `store_body()`; enforce header-first rule (F-30) — body chỉ được xử lý sau header hợp lệ | `src/block_store.py` | **Khôi** | 8 | 6 | 1 | 48 |
-| T2-12 | Ledger/State Store: append-only finalized chain + state snapshot; không bao giờ rollback | `src/ledger.py` | **Huy** | 8 | 7 | 1 | 56 |
-| T2-13 | Atomic persist (F-52): ghi nguyên tử `finalized_height`, `finalized_hash`, state, nonces, block | `src/ledger.py` | **Hiếu** | 9 | 8 | 1 | 72 |
-| T2-14 | Crash recovery (F-53): load từ snapshot, discard unfinalized proposals/votes | `src/ledger.py` | **Khánh** | 9 | 8 | 1 | 72 |
+| Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
+|---------|-----------|------|-------|---------|--------|------|----------|------------|
+| T2-11 | Block Store: `store_header()`, `store_body()`; enforce header-first rule (F-30) — body chỉ được xử lý sau header hợp lệ | `src/block_store.py` | **Khôi** | 8 | 6 | 1 | 48 | 🔲 Chưa làm |
+| T2-12 | Ledger/State Store: append-only finalized chain + state snapshot; không bao giờ rollback | `src/ledger.py` | **Huy** | 8 | 7 | 1 | 56 | ✅ Done (commit `996ec2a`, merged PR #10) — 17 tests pass |
+| T2-13 | Atomic persist (F-52): ghi nguyên tử `finalized_height`, `finalized_hash`, state, nonces, block | `src/ledger.py` | **Hiếu** | 9 | 8 | 1 | 72 | 🔲 Chưa làm |
+| T2-14 | Crash recovery (F-53): load từ snapshot, discard unfinalized proposals/votes | `src/ledger.py` | **Khánh** | 9 | 8 | 1 | 72 | 🔲 Chưa làm |
 
 **✅ Milestone 2 done khi:** Invalid data không thể mutate pending/finalized state; block validation test suite pass.
 
@@ -275,7 +275,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 |-----------|------|------------|----------|------------|
 | G1 | T1-09 | Load/validate identity fixtures | 21 | ✅ Done |
 | G1 | T1-15 | Unit test transaction rejection *(chuyển từ Hiếu)* | 45 | ✅ Done |
-| G2 | T2-05 | Unit test block validation *(chuyển từ Hiếu)* | 54 | ✅ Done — 35 tests pass |
+| G2 | T2-05 | Unit test block validation *(chuyển từ Hiếu)* | 54 | ✅ Done (commit `1389793`) |
 | G2 | T2-09 | Quorum counting `has_quorum()` | 54 | 🔲 Chưa làm |
 | G3 | T3-09 | Peer blocking/unblocking | 30 | 🔲 Chưa làm |
 | G4 | T4-08 | Round change logic | 63 | 🔲 Chưa làm |
@@ -331,9 +331,9 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G1 | T1-06 | Ed25519 `sign()` với domain separation | 54 | ✅ Done |
 | G1 | T1-07 | Ed25519 `verify()` | 54 | ✅ Done |
 | G1 | T1-13 | Deterministic executor | 144 | ✅ Done — 22 tests pass |
-| G2 | T2-03 | Header validation guards (F-26) | 126 | 🔲 Chưa làm |
-| G2 | T2-04 | Block Body + candidate validation | 126 | 🔲 Chưa làm |
-| G2 | T2-08 | Duplicate + equivocation detection | 56 | 🔲 Chưa làm |
+| G2 | T2-03 | Header validation guards (F-26) | 126 | ✅ Done (commit `a2639a0`) |
+| G2 | T2-04 | Block Body + candidate validation | 126 | ✅ Done (commit `a2639a0`) |
+| G2 | T2-08 | Duplicate + equivocation detection | 56 | ✅ Done (commit `3c7edbc`, restored to Main) |
 | G2 | T2-11 | Block Store + header-first rule | 48 | 🔲 Chưa làm |
 | G3 | T3-06 | Seeded PRNG | 54 | 🔲 Chưa làm |
 | G3 | T3-11 | Message Router | 112 | 🔲 Chưa làm |
@@ -355,8 +355,8 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G1 | T1-03 | Sorted map encoder *(gộp vào cùng commit T1-01/02)* | 40 | ✅ Done |
 | G1 | T1-05 | `hash_bytes()` SHA-256 | 27 | ✅ Done |
 | G1 | T1-12 | Transaction object + validation | 126 | ✅ Done |
-| G2 | T2-01 | Block Header object | 126 | 🔲 Chưa làm |
-| G2 | T2-07 | VoteSet storage | 48 | 🔲 Chưa làm |
+| G2 | T2-01 | Block Header object | 126 | ✅ Done (commit `df74115`) |
+| G2 | T2-07 | VoteSet storage | 48 | ✅ Done (commit `b8ec92b`) |
 | G2 | T2-14 | Crash recovery (load snapshot) | 72 | 🔲 Chưa làm |
 | G3 | T3-01 | Canonical event schema (18 types) | 40 | 🔲 Chưa làm |
 | G3 | T3-04 | Envelope type | 28 | 🔲 Chưa làm |
@@ -378,9 +378,9 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G1 | T1-04 | Unit test encoding: tất cả 5 hàm + sorted_map đã có test đầy đủ | 36 | ✅ Done — 47 tests pass |
 | G1 | T1-10 | State map (sorted key-value) | 80 | ✅ Done |
 | G1 | T1-11 | State commitment hash | 48 | ✅ Done |
-| G2 | T2-02 | `tx_root` computation | 40 | 🔲 Chưa làm |
-| G2 | T2-06 | Vote object + guards | 48 | 🔲 Chưa làm |
-| G2 | T2-12 | Ledger append-only + snapshot | 56 | 🔲 Chưa làm |
+| G2 | T2-02 | `tx_root` computation | 40 | ✅ Done (commit `996ec2a`) |
+| G2 | T2-06 | Vote object + guards | 48 | ✅ Done (commit `996ec2a`) — 14 tests pass |
+| G2 | T2-12 | Ledger append-only + snapshot | 56 | ✅ Done (commit `996ec2a`) — 17 tests pass |
 | G3 | T3-02 | JSON Lines writer canonical | 40 | 🔲 Chưa làm |
 | G3 | T3-03 | event_no monotonic + logical_time | 32 | 🔲 Chưa làm |
 | G3 | T3-10 | Canonical iteration order audit | 54 | 🔲 Chưa làm |
@@ -395,15 +395,15 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 ## Tóm Tắt So Sánh Tải Công Việc
 
-> **Cập nhật trạng thái: 2026-08-02** — G1 hoàn thành 100%. Bao gồm G0, coding G1–G5, và management tasks của Bảo.
+> **Cập nhật trạng thái: 2026-08-04** — G1 hoàn thành 100%. G2 hoàn thành một phần (8/14 task merged vào Main, 1 task done trên nhánh chưa merge). Bao gồm G0, coding G1–G5, và management tasks của Bảo.
 
 | Thành viên | Tổng trọng số | Breakdown | Tasks đã Done | Ghi chú |
 |------------|---------------|-----------|---------------|---------|
-| **Bảo** | **1.084** | G0: 241 + Coding G1–G5: 303 + Management G1–G5: 540 | G0 ✅, T1-09 ✅, T1-15 ✅ | TL: review PR + tích hợp milestone + 7 coding tasks G1–G5 |
-| **Hiếu** | **884** | 13 tasks coding G1–G5 | T1-08 ✅, **T1-14 ✅** | T1-14 hoàn thành (22 tests pass) |
-| **Khôi** | **1.402** | 16 tasks coding G1–G5 | T1-06 ✅, T1-07 ✅, **T1-13 ✅** | T1-13 executor hoàn thành trong G1 |
-| **Khánh** | **1.250** | 17 tasks coding G1–G5 | **T1-01 ✅, T1-02 ✅, T1-03 ✅, T1-05 ✅, T1-12 ✅** | 5/17 tasks G1 done |
-| **Huy** | **1.015** | 14 tasks coding G1–G5 | **T1-04 ✅, T1-10 ✅, T1-11 ✅** | 3/14 tasks G1 done |
+| **Bảo** | **1.084** | G0: 241 + Coding G1–G5: 303 + Management G1–G5: 540 | G0 ✅, T1-09 ✅, T1-15 ✅, **T2-05 ✅** | TL: review PR + tích hợp milestone + 7 coding tasks G1–G5 |
+| **Hiếu** | **884** | 13 tasks coding G1–G5 | T1-08 ✅, T1-14 ✅ | G2: T2-10, T2-13 chưa làm |
+| **Khôi** | **1.402** | 16 tasks coding G1–G5 | T1-06 ✅, T1-07 ✅, T1-13 ✅, **T2-03 ✅, T2-04 ✅**, ⚠️ T2-08 (nhánh chưa merge) | T2-08 cần merge lại vào Main |
+| **Khánh** | **1.250** | 17 tasks coding G1–G5 | T1-01 ✅, T1-02 ✅, T1-03 ✅, T1-05 ✅, T1-12 ✅, **T2-01 ✅, T2-07 ✅** | 7/17 tasks done |
+| **Huy** | **1.015** | 14 tasks coding G1–G5 | T1-04 ✅, T1-10 ✅, T1-11 ✅, **T2-02 ✅, T2-06 ✅, T2-12 ✅** | 6/14 tasks done |
 | **Trung bình** | **1.127** | | | |
 
 ### Trạng Thái Tổng Quan Theo Giai Đoạn
@@ -412,14 +412,19 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 |-----------|-----------|---------|---------|------------|
 | G0 | 6 | 6 | 0 | ✅ HOÀN THÀNH |
 | G1 | 15 | 15 (tất cả) | 0 | ✅ HOÀN THÀNH — 110 tests xanh |
-| G2 | 14 | 0 | 14 | 🔲 Chưa bắt đầu |
+| G2 | 14 | 9 (merged) | 5 | 🔄 ĐANG TIẾN HÀNH — T2-01…08, T2-12 ✅; T2-08 restored từ nhánh Khoi |
 | G3 | 16 | 0 | 16 | 🔲 Chưa bắt đầu |
 | G4 | 12 | 0 | 12 | 🔲 Chưa bắt đầu |
 | G5 | 11 | 0 | 11 | 🔲 Chưa bắt đầu |
 
-> **✅ G1 hoàn thành (2026-08-02):** T1-13 (`src/executor.py`) và T1-14 (`tests/test_executor.py`) đã được implement và pass 22 tests. Tổng cộng 110 tests xanh.
+> **✅ G1 hoàn thành (2026-08-02):** 110 tests xanh.
 >
-> **Việc cần làm tiếp theo:** Bắt đầu **Giai đoạn 2** — Data Model và Xác Thực (T2-01 → T2-14).
+> **🔄 G2 đang tiến hành (cập nhật 2026-08-04):**
+> - Merged vào Main: T2-01 (Khánh), T2-02 (Huy), T2-03 (Khôi), T2-04 (Khôi), T2-05 (Bảo), T2-06 (Huy), T2-07 (Khánh), T2-08 (Khôi, restored), T2-12 (Huy) — **9/14 tasks**
+> - Chưa làm: T2-09 (Bảo), T2-10 (Hiếu), T2-11 (Khôi), T2-13 (Hiếu), T2-14 (Khánh)
+> - Tổng tests hiện tại: **181 passed**
+>
+> **Việc cần làm tiếp theo:** T2-09, T2-10, T2-11, T2-13, T2-14.
 
 ---
 

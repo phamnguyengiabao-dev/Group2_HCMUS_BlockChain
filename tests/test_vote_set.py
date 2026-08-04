@@ -66,7 +66,7 @@ def test_get_votes_by_height_round_phase():
 
 
 def test_duplicate_vote_is_ignored():
-    """Same key, same block_hash_or_nil, sent twice"""
+    """Same key, same block_hash_or_nil, sent twice."""
     vote_set = VoteSet()
 
     vote = Vote(
@@ -94,14 +94,13 @@ def test_duplicate_vote_is_ignored():
 
     assert first_result.outcome == VoteOutcome.ACCEPTED
     assert second_result.outcome == VoteOutcome.DUPLICATE_IGNORED
-    assert second_result.stored_vote == vote  # original kept, not the duplicate object
-
+    assert second_result.stored_vote == vote  # original kept, not the duplicate
     assert len(vote_set) == 1
     assert vote_set.equivocations() == []
 
 
 def test_equivocation_is_detected_and_first_vote_kept():
-    """Same (height, round, phase, validator_pubkey) but a different block_hash_or_nil -> equivocation"""
+    """Same (height, round, phase, validator_pubkey) but different block_hash_or_nil → equivocation."""
     vote_set = VoteSet()
 
     first_vote = Vote(
@@ -129,13 +128,13 @@ def test_equivocation_is_detected_and_first_vote_kept():
     assert first_result.outcome == VoteOutcome.ACCEPTED
     assert second_result.outcome == VoteOutcome.EQUIVOCATION_DETECTED
 
-    # The first vote is counted for this key.
+    # The first vote is kept under this key.
     assert second_result.stored_vote == first_vote
     stored = vote_set.get(
         height=1, round=0, phase="PREVOTE", validator_pubkey=b"\x01" * 32
     )
     assert stored == first_vote
-    assert len(vote_set) == 1  # conflicting vote did not get counted as a 2nd vote
+    assert len(vote_set) == 1  # conflicting vote did not add a second entry
 
     # Evidence was recorded, not silently discarded.
     assert vote_set.has_equivocated(
@@ -146,7 +145,7 @@ def test_equivocation_is_detected_and_first_vote_kept():
     assert records[0].first_vote == first_vote
     assert records[0].conflicting_vote == conflicting_vote
 
-    # AddResult also exposes the same evidence to log it immediately.
+    # AddResult also exposes the evidence for immediate logging.
     assert second_result.equivocation is not None
     assert second_result.equivocation.first_vote == first_vote
     assert second_result.equivocation.conflicting_vote == conflicting_vote
