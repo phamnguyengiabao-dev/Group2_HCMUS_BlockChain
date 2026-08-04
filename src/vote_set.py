@@ -16,6 +16,13 @@ T2-08:
     means this validator signed two conflicting votes for the same slot —
     Byzantine behavior. The first vote received is kept; the conflicting vote is
     rejected and recorded as evidence, not silently dropped.
+
+T2-09:
+- Quorum counting: has_quorum(height, round, phase, n) returns True when the
+  number of *distinct* validators that cast a non-NIL vote for (height, round,
+  phase) is >= 2f+1, where f = (n-1)//3 and n is the total validator-set size.
+  Only one vote per validator is counted (the first accepted one); equivocating
+  votes do NOT add to the quorum count.
 """
 from __future__ import annotations
 
@@ -180,3 +187,57 @@ class VoteSet:
         """True if this validator equivocated at this (height, round, phase)."""
         key = (height, round, phase, validator_pubkey)
         return any(r.key == key for r in self._equivocations)
+
+    # ── quorum counting ────────────────────────────────────────────────────────
+
+    def has_quorum(
+        self,
+        height: int,
+        round: int,
+        phase: str,
+        n: int,
+        block_hash: bytes | None = None,
+    ) -> bool:
+        """
+        Return True when a Byzantine-fault-tolerant quorum has been reached.
+
+        Quorum threshold:  >= 2f + 1  distinct validators
+        where  f = (n - 1) // 3  (maximum number of faulty nodes tolerated)
+        and    n = total validator-set size.
+
+        Args:
+            height:     Block height being voted on.
+            round:      Consensus round.
+            phase:      Vote phase ("PREVOTE" or "PRECOMMIT").
+            n:          Total number of validators in the current set.
+            block_hash: Optional filter — if given, only count votes whose
+                        block_hash_or_nil equals this value (use to check
+                        quorum for a *specific* block). If None, count all
+                        non-NIL votes regardless of which block they name.
+
+        Returns:
+            True  — >= 2f+1 distinct validators have voted (for the specific
+                    block if block_hash is provided, or for any non-NIL block).
+            False — threshold not yet reached.
+
+        Raises:
+            ValueError: if n < 1.
+        """
+        if n < 1:
+            raise ValueError(f"n must be >= 1, got {n}")
+
+        f = (n - 1) // 3
+        threshold = 2 * f + 1
+
+        distinct_validators: set[bytes] = set()
+
+        for key, vote in self._votes.items():
+            if key[0] != height or key[1] != round or key[2] != phase:
+                continue
+            if vote.block_hash_or_nil is None:
+                continue  # NIL vote — never counts toward a quorum
+            if block_hash is not None and vote.block_hash_or_nil != block_hash:
+                continue  # wrong block — skip when filtering by block
+            distinct_validators.add(vote.validator_pubkey)
+
+        return len(distinct_validators) >= threshold

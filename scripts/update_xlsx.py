@@ -267,12 +267,12 @@ TASKS = [
   ('T2-09','Quorum counting has_quorum()',
    'src/vote_set.py — True khi >= 2f+1 validators riêng biệt',
    'Đếm distinct validators: 50%\nNgưỡng 2f+1: 50%',
-   '','Bảo',9,6,1,'',0.0,'G2'),
+   'Done — has_quorum(height, round, phase, n, block_hash=None); 15 tests pass','Bảo',9,6,1,'has_quorum() với block filter — 15 tests pass',1.0,'G2'),
 
   ('T2-10','Unit test vote_set',
    'tests/test_vote_set.py — duplicate/non-member/equivocation/quorum',
    'Duplicate bỏ qua: 25%\nNon-member từ chối: 25%\nEquivocation log: 25%\nQuorum đúng: 25%',
-   '','Hiếu',9,6,1,'',0.0,'G2'),
+   'Done — 33 tests pass (T2-07+T2-08+T2-09 full coverage)','Hiếu',9,6,1,'33 tests pass — full coverage VoteSet',1.0,'G2'),
 
   # ── 2C: Block Store & Ledger ──
   ('T2-11','Block Store + header-first rule (F-30)',

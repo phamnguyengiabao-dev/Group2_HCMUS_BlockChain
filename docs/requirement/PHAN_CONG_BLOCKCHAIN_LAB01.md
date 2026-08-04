@@ -132,8 +132,8 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | T2-06 | Vote object với tất cả validation guards (F-40): chain_id, member check, VOTE domain signature, height/round/phase khớp | `src/vote.py` | **Huy** | 8 | 6 | 1 | 48 | ✅ Done (commit `996ec2a`, merged PR #10) — 14 tests pass |
 | T2-07 | VoteSet: lưu votes theo key `(height, round, phase, validator_pubkey)` | `src/vote_set.py` | **Khánh** | 8 | 6 | 1 | 48 | ✅ Done (commit `b8ec92b`, merged PR #9) |
 | T2-08 | Duplicate detection (bỏ qua) và equivocation detection (ghi log, không thay thế vote đầu) trong VoteSet | `src/vote_set.py` | **Khôi** | 8 | 7 | 1 | 56 | ✅ Done (commit `3c7edbc`, restored to Main) — 4 tests pass |
-| T2-09 | Quorum counting: `has_quorum()` chỉ trả True khi có `>= 2f+1` validators **riêng biệt** | `src/vote_set.py` | **Bảo** | 9 | 6 | 1 | 54 | 🔲 Chưa làm |
-| T2-10 | Unit test vote_set: duplicate bỏ qua, non-member từ chối, equivocation log, quorum chỉ đạt đủ validators | `tests/test_vote_set.py` | **Hiếu** | 9 | 6 | 1 | 54 | 🔲 Chưa làm |
+| T2-09 | Quorum counting: `has_quorum()` chỉ trả True khi có `>= 2f+1` validators **riêng biệt** | `src/vote_set.py` | **Bảo** | 9 | 6 | 1 | 54 | ✅ Done — `has_quorum(height, round, phase, n, block_hash=None)` với block filter; 15 tests pass |
+| T2-10 | Unit test vote_set: duplicate bỏ qua, non-member từ chối, equivocation log, quorum chỉ đạt đủ validators | `tests/test_vote_set.py` | **Hiếu** | 9 | 6 | 1 | 54 | ✅ Done — 33 tests pass (T2-07+T2-08+T2-09 full coverage) |
 
 ### 2C — Block Store & Ledger (`src/block_store.py`, `src/ledger.py`)
 
@@ -276,7 +276,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G1 | T1-09 | Load/validate identity fixtures | 21 | ✅ Done |
 | G1 | T1-15 | Unit test transaction rejection *(chuyển từ Hiếu)* | 45 | ✅ Done |
 | G2 | T2-05 | Unit test block validation *(chuyển từ Hiếu)* | 54 | ✅ Done (commit `1389793`) |
-| G2 | T2-09 | Quorum counting `has_quorum()` | 54 | 🔲 Chưa làm |
+| G2 | T2-09 | Quorum counting `has_quorum()` | 54 | ✅ Done — 15 tests pass |
 | G3 | T3-09 | Peer blocking/unblocking | 30 | 🔲 Chưa làm |
 | G4 | T4-08 | Round change logic | 63 | 🔲 Chưa làm |
 | G5 | T5-10 | `--verify-determinism` script | 36 | 🔲 Chưa làm |
@@ -311,7 +311,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 |-----------|------|------------|----------|------------|
 | G1 | T1-08 | Unit test crypto | 45 | ✅ Done |
 | G1 | T1-14 | Unit test determinism executor | 45 | ✅ Done — 22 tests pass |
-| G2 | T2-10 | Unit test vote_set | 54 | 🔲 Chưa làm |
+| G2 | T2-10 | Unit test vote_set | 54 | ✅ Done — 33 tests pass |
 | G2 | T2-13 | Atomic persist ledger | 72 | 🔲 Chưa làm |
 | G3 | T3-05 | Deterministic scheduler | 126 | 🔲 Chưa làm |
 | G3 | T3-08 | Bandwidth + rate limit | 36 | 🔲 Chưa làm |
@@ -399,8 +399,8 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 | Thành viên | Tổng trọng số | Breakdown | Tasks đã Done | Ghi chú |
 |------------|---------------|-----------|---------------|---------|
-| **Bảo** | **1.084** | G0: 241 + Coding G1–G5: 303 + Management G1–G5: 540 | G0 ✅, T1-09 ✅, T1-15 ✅, **T2-05 ✅** | TL: review PR + tích hợp milestone + 7 coding tasks G1–G5 |
-| **Hiếu** | **884** | 13 tasks coding G1–G5 | T1-08 ✅, T1-14 ✅ | G2: T2-10, T2-13 chưa làm |
+| **Bảo** | **1.084** | G0: 241 + Coding G1–G5: 303 + Management G1–G5: 540 | G0 ✅, T1-09 ✅, T1-15 ✅, T2-05 ✅, **T2-09 ✅** | TL: review PR + tích hợp milestone + 7 coding tasks G1–G5 |
+| **Hiếu** | **884** | 13 tasks coding G1–G5 | T1-08 ✅, T1-14 ✅, **T2-10 ✅** | G2: T2-13 chưa làm |
 | **Khôi** | **1.402** | 16 tasks coding G1–G5 | T1-06 ✅, T1-07 ✅, T1-13 ✅, **T2-03 ✅, T2-04 ✅**, ⚠️ T2-08 (nhánh chưa merge) | T2-08 cần merge lại vào Main |
 | **Khánh** | **1.250** | 17 tasks coding G1–G5 | T1-01 ✅, T1-02 ✅, T1-03 ✅, T1-05 ✅, T1-12 ✅, **T2-01 ✅, T2-07 ✅** | 7/17 tasks done |
 | **Huy** | **1.015** | 14 tasks coding G1–G5 | T1-04 ✅, T1-10 ✅, T1-11 ✅, **T2-02 ✅, T2-06 ✅, T2-12 ✅** | 6/14 tasks done |
@@ -412,7 +412,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 |-----------|-----------|---------|---------|------------|
 | G0 | 6 | 6 | 0 | ✅ HOÀN THÀNH |
 | G1 | 15 | 15 (tất cả) | 0 | ✅ HOÀN THÀNH — 110 tests xanh |
-| G2 | 14 | 9 (merged) | 5 | 🔄 ĐANG TIẾN HÀNH — T2-01…08, T2-12 ✅; T2-08 restored từ nhánh Khoi |
+| G2 | 14 | 11 | 3 | 🔄 ĐANG TIẾN HÀNH — T2-01…10, T2-12 ✅; còn T2-11, T2-13, T2-14 |
 | G3 | 16 | 0 | 16 | 🔲 Chưa bắt đầu |
 | G4 | 12 | 0 | 12 | 🔲 Chưa bắt đầu |
 | G5 | 11 | 0 | 11 | 🔲 Chưa bắt đầu |
@@ -420,11 +420,11 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 > **✅ G1 hoàn thành (2026-08-02):** 110 tests xanh.
 >
 > **🔄 G2 đang tiến hành (cập nhật 2026-08-04):**
-> - Merged vào Main: T2-01 (Khánh), T2-02 (Huy), T2-03 (Khôi), T2-04 (Khôi), T2-05 (Bảo), T2-06 (Huy), T2-07 (Khánh), T2-08 (Khôi, restored), T2-12 (Huy) — **9/14 tasks**
-> - Chưa làm: T2-09 (Bảo), T2-10 (Hiếu), T2-11 (Khôi), T2-13 (Hiếu), T2-14 (Khánh)
-> - Tổng tests hiện tại: **181 passed**
+> - Merged vào Main: T2-01…T2-10, T2-12 — **11/14 tasks**
+> - Chưa làm: T2-11 (Khôi), T2-13 (Hiếu), T2-14 (Khánh)
+> - Tổng tests hiện tại: **210 passed**
 >
-> **Việc cần làm tiếp theo:** T2-09, T2-10, T2-11, T2-13, T2-14.
+> **Việc cần làm tiếp theo:** T2-11 (Block Store), T2-13 (Atomic persist), T2-14 (Crash recovery).
 
 ---
 
