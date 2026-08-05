@@ -156,7 +156,7 @@ class VoteSet:
 
         result = []
 
-        for key, vote in self._votes.items():
+        for key, vote in sorted(self._votes.items()):
             if (
                 key[0] == height
                 and key[1] == round
@@ -231,7 +231,7 @@ class VoteSet:
 
         distinct_validators: set[bytes] = set()
 
-        for key, vote in self._votes.items():
+        for key, vote in sorted(self._votes.items()):
             if key[0] != height or key[1] != round or key[2] != phase:
                 continue
             if vote.block_hash_or_nil is None:
