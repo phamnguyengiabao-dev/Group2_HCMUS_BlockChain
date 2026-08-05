@@ -141,8 +141,8 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 |---------|-----------|------|-------|---------|--------|------|----------|------------|
 | T2-11 | Block Store: `store_header()`, `store_body()`; enforce header-first rule (F-30) — body chỉ được xử lý sau header hợp lệ | `src/block_store.py` | **Khôi** | 8 | 6 | 1 | 48 | ✅ Done (commit `8b522a8`, nhánh Khoi) — 7 tests pass |
 | T2-12 | Ledger/State Store: append-only finalized chain + state snapshot; không bao giờ rollback | `src/ledger.py` | **Huy** | 8 | 7 | 1 | 56 | ✅ Done (commit `996ec2a`, merged PR #10) — 17 tests pass |
-| T2-13 | Atomic persist (F-52): ghi nguyên tử `finalized_height`, `finalized_hash`, state, nonces, block | `src/ledger.py` | **Hiếu** | 9 | 8 | 1 | 72 | 🔲 Chưa làm |
-| T2-14 | Crash recovery (F-53): load từ snapshot, discard unfinalized proposals/votes | `src/ledger.py` | **Khánh** | 9 | 8 | 1 | 72 | 🔲 Chưa làm |
+| T2-13 | Atomic persist (F-52): ghi nguyên tử `finalized_height`, `finalized_hash`, state, nonces, block | `src/ledger.py` | **Hiếu** | 9 | 8 | 1 | 72 | ✅ Done |
+| T2-14 | Crash recovery (F-53): load từ snapshot, discard unfinalized proposals/votes | `src/ledger.py` | **Khánh** | 9 | 8 | 1 | 72 | ✅ Done |
 
 **✅ Milestone 2 done khi:** Invalid data không thể mutate pending/finalized state; block validation test suite pass.
 
