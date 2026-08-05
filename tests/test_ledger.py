@@ -335,3 +335,176 @@ def test_iteration_is_in_ascending_height_order():
     )
 
     assert list(ledger) == [1, 2, 3]
+<<<<<<< Updated upstream
+=======
+
+
+# ============================================================
+# Atomic finalized snapshot persistence (T2-13 / F-52)
+# ============================================================
+
+def test_finalize_atomically_persists_f52_snapshot(tmp_path):
+    private_key, public_key = make_key_pair()
+    snapshot = tmp_path / "ledger.json"
+    ledger = Ledger(CHAIN_ID, storage_path=snapshot)
+    state = State()
+    state.insert("owner/key", b"value")
+    header = make_header(1, b"\x00" * 32, private_key, public_key, state)
+
+    ledger.finalize(
+        header=header,
+        applied_tx_ids=[b"\x11" * 32],
+        state=state,
+        nonces={public_key: 2},
+    )
+
+    assert snapshot.exists()
+    payload = json.loads(snapshot.read_text(encoding="utf-8"))
+    assert payload["finalized_height"] == 1
+    assert payload["finalized_hash"] == header.block_hash().hex()
+    assert payload["state"] == [{"key": "owner/key", "value": "dmFsdWU="}]
+    assert payload["nonces"] == [{"sender_pubkey": public_key.hex(), "nonce": 2}]
+    assert payload["block"]["header"]["signature"] == header.signature.hex()
+    assert payload["block"]["applied_tx_ids"] == [(b"\x11" * 32).hex()]
+
+
+def test_failed_snapshot_write_does_not_publish_finalized_entry(tmp_path, monkeypatch):
+    private_key, public_key = make_key_pair()
+    snapshot = tmp_path / "ledger.json"
+    ledger = Ledger(CHAIN_ID, storage_path=snapshot)
+    header = make_header(1, b"\x00" * 32, private_key, public_key)
+
+    def fail_replace(*args):
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr("src.ledger.os.replace", fail_replace)
+    with pytest.raises(OSError, match="replace failure"):
+        ledger.finalize(header=header, applied_tx_ids=[], state=State(), nonces={})
+
+    assert ledger.finalized_height == 0
+    assert len(ledger) == 0
+
+# ============================================================
+# Crash recovery (T2-14 / F-53)
+# ============================================================
+
+def test_load_snapshot_recovers_finalized_data(tmp_path):
+    private_key, public_key = make_key_pair()
+
+    snapshot = tmp_path / "ledger.json"
+
+    # Create and persist a finalized ledger.
+    ledger = Ledger(
+        CHAIN_ID,
+        storage_path=snapshot,
+    )
+
+    state = State()
+    state.insert(
+        "owner/key",
+        b"value",
+    )
+
+    header = make_header(
+        1,
+        b"\x00" * 32,
+        private_key,
+        public_key,
+        state,
+    )
+
+    tx_id = b"\x11" * 32
+
+    ledger.finalize(
+        header=header,
+        applied_tx_ids=[tx_id],
+        state=state,
+        nonces={
+            public_key: 2,
+        },
+    )
+
+    # Simulate a restart.
+    recovered = Ledger.load_snapshot(
+        CHAIN_ID,
+        snapshot,
+    )
+
+    # Finalized block is recovered.
+    assert recovered.finalized_height == 1
+    assert (
+        recovered.finalized_hash
+        == header.block_hash()
+    )
+
+    assert recovered.is_finalized(1)
+    assert len(recovered) == 1
+
+    # Finalized state is recovered.
+    recovered_state = recovered.get_state(1)
+
+    assert (
+        recovered_state.get("owner/key")
+        == b"value"
+    )
+
+    assert (
+        recovered_state.state_hash()
+        == state.state_hash()
+    )
+
+    # Finalized nonces are recovered.
+    assert (
+        recovered.get_nonces(1)
+        == {
+            public_key: 2,
+        }
+    )
+
+    # Applied transaction IDs are recovered.
+    assert (
+        recovered.get_entry(1)
+        .applied_tx_ids
+        == (tx_id,)
+    )
+
+
+def test_load_snapshot_discards_unfinalized_data(tmp_path):
+    private_key, public_key = make_key_pair()
+
+    snapshot = tmp_path / "ledger.json"
+
+    ledger = Ledger(
+        CHAIN_ID,
+        storage_path=snapshot,
+    )
+
+    header = make_header(
+        1,
+        b"\x00" * 32,
+        private_key,
+        public_key,
+    )
+
+    ledger.finalize(
+        header=header,
+        applied_tx_ids=[],
+        state=State(),
+        nonces={},
+    )
+
+    # Simulate crash recovery.
+    recovered = Ledger.load_snapshot(
+        CHAIN_ID,
+        snapshot,
+    )
+
+    # Only finalized height is restored.
+    assert recovered.finalized_height == 1
+
+    # No unfinalized height is restored.
+    assert not recovered.is_finalized(2)
+
+    with pytest.raises(KeyError):
+        recovered.get_entry(2)
+>>>>>>> Stashed changes
