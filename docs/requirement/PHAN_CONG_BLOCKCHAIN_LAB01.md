@@ -156,21 +156,21 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 ### 3A — Event Log (`src/event_log.py`)
 
-| Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số |
-|---------|-----------|------|-------|---------|--------|------|----------|
-| T3-01 | Định nghĩa canonical event schema: 18 event types (`SEND`, `DELIVER`, `DROP`, `DELAY`, `DUPLICATE`, `PEER_BLOCK`, `PEER_UNBLOCK`, `REJECT`, `PROPOSE`, `PREVOTE`, `PRECOMMIT`, `LOCK`, `TIMEOUT`, `ROUND_CHANGE`, `FINALIZE`, `EQUIVOCATION`, `CRASH`, `RESTART`) với fixed field order | `src/event_log.py` | **Khánh** | 8 | 5 | 1 | 40 |
-| T3-02 | Canonical JSON Lines writer: fixed key order, không whitespace thừa, UTF-8, newline sau mỗi event | `src/event_log.py` | **Huy** | 8 | 5 | 1 | 40 |
-| T3-03 | Đảm bảo `event_no` tăng monotonically và `logical_time` chính xác trong mọi event | `src/event_log.py` | **Huy** | 8 | 4 | 1 | 32 |
+| Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
+|---------|-----------|------|-------|---------|--------|------|----------|------------|
+| T3-01 | Định nghĩa canonical event schema: 18 event types (`SEND`, `DELIVER`, `DROP`, `DELAY`, `DUPLICATE`, `PEER_BLOCK`, `PEER_UNBLOCK`, `REJECT`, `PROPOSE`, `PREVOTE`, `PRECOMMIT`, `LOCK`, `TIMEOUT`, `ROUND_CHANGE`, `FINALIZE`, `EQUIVOCATION`, `CRASH`, `RESTART`) với fixed field order | `src/event_log.py` | **Khánh** | 8 | 5 | 1 | 40 | ✅ Done |
+| T3-02 | Canonical JSON Lines writer: fixed key order, không whitespace thừa, UTF-8, newline sau mỗi event | `src/event_log.py` | **Huy** | 8 | 5 | 1 | 40 | ✅ Done |
+| T3-03 | Đảm bảo `event_no` tăng monotonically và `logical_time` chính xác trong mọi event | `src/event_log.py` | **Huy** | 8 | 4 | 1 | 32 | ✅ Done |
 
 ### 3B — Simulated Network (`src/network.py`, `src/scheduler.py`, `src/fault_injector.py`)
 
-| Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số |
-|---------|-----------|------|-------|---------|--------|------|----------|
-| T3-04 | Envelope type: `(sender, receiver, payload, logical_time, insertion_seq)`; serialize đúng | `src/network.py` | **Khánh** | 7 | 4 | 1 | 28 |
-| T3-05 | Deterministic scheduler: priority queue `(logical_time, insertion_seq)`; tie-break theo insertion_seq | `src/scheduler.py` | **Hiếu** | 9 | 7 | 2 | 126 |
-| T3-06 | Seeded PRNG (seed do scenario runner sở hữu): `Random(seed)` không bao giờ gọi `random.random()` global | `src/scheduler.py` | **Khôi** | 9 | 6 | 1 | 54 |
+| Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
+|---------|-----------|------|-------|---------|--------|------|----------|------------|
+| T3-04 | Envelope type: `(sender, receiver, payload, logical_time, insertion_seq)`; serialize đúng | `src/network.py` | **Khánh** | 7 | 4 | 1 | 28 | ✅ Done |
+| T3-05 | Deterministic scheduler: priority queue `(logical_time, insertion_seq)`; tie-break theo insertion_seq | `src/scheduler.py` | **Hiếu** | 9 | 7 | 2 | 126 | ✅ Done |
+| T3-06 | Seeded PRNG (seed do scenario runner sở hữu): `Random(seed)` không bao giờ gọi `random.random()` global | `src/scheduler.py` | **Khôi** | 9 | 6 | 1 | 54 | ✅ Done (bug SCENARIO_START/END/NODE_INIT không có trong EventType enum; SEND event ghi trước DELIVER nhưng có logical_time cao hơn → refactor send() để defer SEND event logging đến lúc deliver, đảm bảo monotonic -> fixed) |
 | T3-07 | Fault injector: drop / delay / duplicate / reorder từ scenario config; dùng PRNG từ T3-06 | `src/fault_injector.py` | **Khánh** | 8 | 7 | 2 | 112 |
-| T3-08 | Bandwidth limit và rate limiting: kiểm tra bytes/tick không vượt `bandwidth_limit_bytes_per_tick` | `src/network.py` | **Hiếu** | 6 | 6 | 1 | 36 |
+| T3-08 | Bandwidth limit và rate limiting: kiểm tra bytes/tick không vượt `bandwidth_limit_bytes_per_tick` | `src/network.py` | **Hiếu** | 6 | 6 | 1 | 36 | ✅ Done |
 | T3-09 | Peer blocking/unblocking tạm thời: `block_peer(id)` / `unblock_peer(id)` log `PEER_BLOCK`/`PEER_UNBLOCK` | `src/network.py` | **Bảo** | 6 | 5 | 1 | 30 |
 | T3-10 | Canonical iteration order: audit toàn bộ code, sửa mọi chỗ dùng dict/set iteration → dùng `sorted()` | toàn bộ `src/` | **Huy** | 9 | 6 | 1 | 54 |
 
