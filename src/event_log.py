@@ -14,6 +14,11 @@ T3-01:
 - Sort all details keys alphabetically.
 - Reject unknown event types.
 
+T3-03:
+- `event_no` must increase by exactly +1 per event (starts at 1).
+- `logical_time` must be a non-negative int that never runs backward
+  within a single log.
+
 Each event is written as exactly one JSON line.
 """
 
@@ -204,6 +209,8 @@ class EventLog:
     - one validated canonical event type
     - alphabetically sorted details keys
     - compact deterministic JSON formatting
+    - a strictly monotonic event_no (previous + 1, starting at 1)
+    - a non-decreasing, non-negative logical_time
     """
 
     def __init__(
@@ -238,6 +245,8 @@ class EventLog:
 
         self._event_count = 0
 
+        self._last_logical_time: int | None = None
+
         self._closed = False
 
     def write_event(
@@ -264,11 +273,63 @@ class EventLog:
             details
 
         Details keys are sorted alphabetically.
+
+        Raises:
+            TypeError:
+                - `event_no` or `logical_time` is not an `int` (bool
+                  excluded).
+
+            ValueError:
+                - `event_no` is not exactly the previous `event_no` + 1
+                  (starts at 1 for the first event in this log).
+                - `logical_time` is negative.
+                - `logical_time` is smaller than the previous event's
+                  `logical_time` (logical time never runs backward).
         """
 
         if self._closed:
             raise ValueError(
                 "EVENT_LOG_CLOSED"
+            )
+
+        if (
+            not isinstance(event_no, int)
+            or isinstance(event_no, bool)
+        ):
+            raise TypeError(
+                "event_no must be int, "
+                f"got {type(event_no).__name__}"
+            )
+
+        if (
+            not isinstance(logical_time, int)
+            or isinstance(logical_time, bool)
+        ):
+            raise TypeError(
+                "logical_time must be int, "
+                f"got {type(logical_time).__name__}"
+            )
+
+        expected_event_no = self._event_count + 1
+        if event_no != expected_event_no:
+            raise ValueError(
+                "NON_MONOTONIC_EVENT_NO: "
+                f"expected {expected_event_no}, got {event_no}"
+            )
+
+        if logical_time < 0:
+            raise ValueError(
+                "INVALID_LOGICAL_TIME: "
+                f"logical_time must be >= 0, got {logical_time}"
+            )
+
+        if (
+            self._last_logical_time is not None
+            and logical_time < self._last_logical_time
+        ):
+            raise ValueError(
+                "NON_MONOTONIC_LOGICAL_TIME: "
+                f"expected >= {self._last_logical_time}, got {logical_time}"
             )
 
         canonical_event_type = (
@@ -315,6 +376,7 @@ class EventLog:
         )
 
         self._event_count += 1
+        self._last_logical_time = logical_time
 
     def close(self) -> None:
         """

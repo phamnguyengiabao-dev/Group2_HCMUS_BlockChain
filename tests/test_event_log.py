@@ -291,6 +291,375 @@ def test_fixed_key_order_holds_across_multiple_events(tmp_path, monkeypatch):
         assert list(record["details"].keys()) == ["b", "y"]
 
 
+# ============================================================
+# T3-03: event_no monotonic
+# ============================================================
+
+def test_event_no_must_start_at_one(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    with pytest.raises(ValueError, match="NON_MONOTONIC_EVENT_NO"):
+        log.write_event(
+            event_no=2,
+            logical_time=0,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+
+def test_event_no_increments_by_one_across_events(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    for event_no in (1, 2, 3):
+        log.write_event(
+            event_no=event_no,
+            logical_time=0,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+    assert log.event_count == 3
+
+
+def test_event_no_gap_is_rejected(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    log.write_event(
+        event_no=1,
+        logical_time=0,
+        node_id="node_0",
+        event_type="SEND",
+        height=1,
+        round=0,
+        details={},
+    )
+
+    with pytest.raises(ValueError, match="NON_MONOTONIC_EVENT_NO"):
+        log.write_event(
+            event_no=3,
+            logical_time=0,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+
+def test_event_no_duplicate_is_rejected(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    log.write_event(
+        event_no=1,
+        logical_time=0,
+        node_id="node_0",
+        event_type="SEND",
+        height=1,
+        round=0,
+        details={},
+    )
+
+    with pytest.raises(ValueError, match="NON_MONOTONIC_EVENT_NO"):
+        log.write_event(
+            event_no=1,
+            logical_time=0,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+
+def test_event_no_going_backward_is_rejected(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    for event_no in (1, 2):
+        log.write_event(
+            event_no=event_no,
+            logical_time=0,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    with pytest.raises(ValueError, match="NON_MONOTONIC_EVENT_NO"):
+        log.write_event(
+            event_no=2,
+            logical_time=0,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+
+def test_event_no_wrong_type_raises_type_error(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    with pytest.raises(TypeError, match="event_no"):
+        log.write_event(
+            event_no="1",
+            logical_time=0,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+
+def test_event_no_bool_is_rejected_as_type_error(tmp_path, monkeypatch):
+    """bool is a subclass of int in Python -- must not silently pass as
+    a valid event_no."""
+
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    with pytest.raises(TypeError, match="event_no"):
+        log.write_event(
+            event_no=True,
+            logical_time=0,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+
+# ============================================================
+# T3-03: logical_time accuracy
+# ============================================================
+
+def test_logical_time_negative_is_rejected(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    with pytest.raises(ValueError, match="INVALID_LOGICAL_TIME"):
+        log.write_event(
+            event_no=1,
+            logical_time=-1,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+
+def test_logical_time_may_repeat_across_events(tmp_path, monkeypatch):
+    """Multiple events can share the same logical tick (e.g. several
+    messages delivered at the same simulated time)."""
+
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    for event_no in (1, 2, 3):
+        log.write_event(
+            event_no=event_no,
+            logical_time=5,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+    assert log.event_count == 3
+
+
+def test_logical_time_going_backward_is_rejected(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    log.write_event(
+        event_no=1,
+        logical_time=5,
+        node_id="node_0",
+        event_type="SEND",
+        height=1,
+        round=0,
+        details={},
+    )
+
+    with pytest.raises(ValueError, match="NON_MONOTONIC_LOGICAL_TIME"):
+        log.write_event(
+            event_no=2,
+            logical_time=4,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+
+def test_logical_time_wrong_type_raises_type_error(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    with pytest.raises(TypeError, match="logical_time"):
+        log.write_event(
+            event_no=1,
+            logical_time=1.5,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+
+def test_logical_time_bool_is_rejected_as_type_error(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    with pytest.raises(TypeError, match="logical_time"):
+        log.write_event(
+            event_no=1,
+            logical_time=False,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+
+# ============================================================
+# T3-03: guard ordering
+# ============================================================
+
+def test_event_no_check_runs_before_logical_time_check(tmp_path, monkeypatch):
+    """Both event_no and logical_time are invalid -- event_no should be
+    reported first since it is checked first."""
+
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    with pytest.raises(ValueError, match="NON_MONOTONIC_EVENT_NO"):
+        log.write_event(
+            event_no=5,
+            logical_time=-1,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+
+def test_type_checks_run_before_monotonic_checks(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    # event_no is the wrong type AND would also violate monotonicity if
+    # coerced -- the TypeError must win.
+    with pytest.raises(TypeError, match="event_no"):
+        log.write_event(
+            event_no="99",
+            logical_time=0,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    log.close()
+
+
+def test_rejected_event_does_not_advance_state(tmp_path, monkeypatch):
+    """A failed write_event() call must not consume the event_no /
+    logical_time sequence -- the next valid call still expects event_no=1."""
+
+    monkeypatch.chdir(tmp_path)
+
+    log = EventLog("scenario_1", "run_1")
+
+    with pytest.raises(ValueError, match="INVALID_LOGICAL_TIME"):
+        log.write_event(
+            event_no=1,
+            logical_time=-1,
+            node_id="node_0",
+            event_type="SEND",
+            height=1,
+            round=0,
+            details={},
+        )
+
+    # Still expects event_no=1 -- the rejected call did not count.
+    log.write_event(
+        event_no=1,
+        logical_time=0,
+        node_id="node_0",
+        event_type="SEND",
+        height=1,
+        round=0,
+        details={},
+    )
+
+    log.close()
+
+    assert log.event_count == 1
+
+
 def test_event_type_enum_accepted(
     tmp_path,
     monkeypatch,
