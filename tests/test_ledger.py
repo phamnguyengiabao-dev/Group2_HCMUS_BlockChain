@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -335,8 +337,6 @@ def test_iteration_is_in_ascending_height_order():
     )
 
     assert list(ledger) == [1, 2, 3]
-<<<<<<< Updated upstream
-=======
 
 
 # ============================================================
@@ -390,101 +390,51 @@ def test_failed_snapshot_write_does_not_publish_finalized_entry(tmp_path, monkey
 
 def test_load_snapshot_recovers_finalized_data(tmp_path):
     private_key, public_key = make_key_pair()
-
     snapshot = tmp_path / "ledger.json"
 
     # Create and persist a finalized ledger.
-    ledger = Ledger(
-        CHAIN_ID,
-        storage_path=snapshot,
-    )
+    ledger = Ledger(CHAIN_ID, storage_path=snapshot)
 
     state = State()
-    state.insert(
-        "owner/key",
-        b"value",
-    )
+    state.insert("owner/key", b"value")
 
-    header = make_header(
-        1,
-        b"\x00" * 32,
-        private_key,
-        public_key,
-        state,
-    )
-
+    header = make_header(1, b"\x00" * 32, private_key, public_key, state)
     tx_id = b"\x11" * 32
 
     ledger.finalize(
         header=header,
         applied_tx_ids=[tx_id],
         state=state,
-        nonces={
-            public_key: 2,
-        },
+        nonces={public_key: 2},
     )
 
     # Simulate a restart.
-    recovered = Ledger.load_snapshot(
-        CHAIN_ID,
-        snapshot,
-    )
+    recovered = Ledger.load_snapshot(CHAIN_ID, snapshot)
 
     # Finalized block is recovered.
     assert recovered.finalized_height == 1
-    assert (
-        recovered.finalized_hash
-        == header.block_hash()
-    )
-
+    assert recovered.finalized_hash == header.block_hash()
     assert recovered.is_finalized(1)
     assert len(recovered) == 1
 
     # Finalized state is recovered.
     recovered_state = recovered.get_state(1)
-
-    assert (
-        recovered_state.get("owner/key")
-        == b"value"
-    )
-
-    assert (
-        recovered_state.state_hash()
-        == state.state_hash()
-    )
+    assert recovered_state.get("owner/key") == b"value"
+    assert recovered_state.state_hash() == state.state_hash()
 
     # Finalized nonces are recovered.
-    assert (
-        recovered.get_nonces(1)
-        == {
-            public_key: 2,
-        }
-    )
+    assert recovered.get_nonces(1) == {public_key: 2}
 
     # Applied transaction IDs are recovered.
-    assert (
-        recovered.get_entry(1)
-        .applied_tx_ids
-        == (tx_id,)
-    )
+    assert recovered.get_entry(1).applied_tx_ids == (tx_id,)
 
 
 def test_load_snapshot_discards_unfinalized_data(tmp_path):
     private_key, public_key = make_key_pair()
-
     snapshot = tmp_path / "ledger.json"
 
-    ledger = Ledger(
-        CHAIN_ID,
-        storage_path=snapshot,
-    )
-
-    header = make_header(
-        1,
-        b"\x00" * 32,
-        private_key,
-        public_key,
-    )
+    ledger = Ledger(CHAIN_ID, storage_path=snapshot)
+    header = make_header(1, b"\x00" * 32, private_key, public_key)
 
     ledger.finalize(
         header=header,
@@ -494,17 +444,63 @@ def test_load_snapshot_discards_unfinalized_data(tmp_path):
     )
 
     # Simulate crash recovery.
-    recovered = Ledger.load_snapshot(
-        CHAIN_ID,
-        snapshot,
-    )
+    recovered = Ledger.load_snapshot(CHAIN_ID, snapshot)
 
     # Only finalized height is restored.
     assert recovered.finalized_height == 1
 
-    # No unfinalized height is restored.
+    # No unfinalized height is restored (F-53).
     assert not recovered.is_finalized(2)
 
     with pytest.raises(KeyError):
         recovered.get_entry(2)
->>>>>>> Stashed changes
+
+
+def test_load_snapshot_missing_file_returns_empty_ledger(tmp_path):
+    snapshot = tmp_path / "nonexistent.json"
+
+    recovered = Ledger.load_snapshot(CHAIN_ID, snapshot)
+
+    assert recovered.finalized_height == 0
+    assert recovered.finalized_hash is None
+    assert len(recovered) == 0
+
+
+def test_load_snapshot_corrupt_file_raises_value_error(tmp_path):
+    snapshot = tmp_path / "ledger.json"
+    snapshot.write_text("not valid json", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="INVALID_SNAPSHOT"):
+        Ledger.load_snapshot(CHAIN_ID, snapshot)
+
+
+def test_load_snapshot_wrong_chain_id_raises_value_error(tmp_path):
+    private_key, public_key = make_key_pair()
+    snapshot = tmp_path / "ledger.json"
+
+    ledger = Ledger(CHAIN_ID, storage_path=snapshot)
+    header = make_header(1, b"\x00" * 32, private_key, public_key)
+    ledger.finalize(header=header, applied_tx_ids=[], state=State(), nonces={})
+
+    with pytest.raises(ValueError, match="CHAIN_ID_MISMATCH"):
+        Ledger.load_snapshot("wrong-chain", snapshot)
+
+
+def test_load_snapshot_recovered_ledger_can_continue_finalizing(tmp_path):
+    private_key, public_key = make_key_pair()
+    snapshot = tmp_path / "ledger.json"
+
+    ledger = Ledger(CHAIN_ID, storage_path=snapshot)
+    header_1 = make_header(1, b"\x00" * 32, private_key, public_key)
+    ledger.finalize(header=header_1, applied_tx_ids=[], state=State(), nonces={})
+
+    # Recover from snapshot.
+    recovered = Ledger.load_snapshot(CHAIN_ID, snapshot)
+    assert recovered.finalized_height == 1
+
+    # Should be able to continue appending from recovered state.
+    header_2 = make_header(2, header_1.block_hash(), private_key, public_key)
+    recovered.finalize(header=header_2, applied_tx_ids=[], state=State(), nonces={})
+
+    assert recovered.finalized_height == 2
+    assert recovered.finalized_hash == header_2.block_hash()
