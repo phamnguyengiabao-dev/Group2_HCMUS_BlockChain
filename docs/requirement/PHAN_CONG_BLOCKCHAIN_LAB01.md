@@ -168,7 +168,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 |---------|-----------|------|-------|---------|--------|------|----------|------------|
 | T3-04 | Envelope type: `(sender, receiver, payload, logical_time, insertion_seq)`; serialize đúng | `src/network.py` | **Khánh** | 7 | 4 | 1 | 28 | ✅ Done |
 | T3-05 | Deterministic scheduler: priority queue `(logical_time, insertion_seq)`; tie-break theo insertion_seq | `src/scheduler.py` | **Hiếu** | 9 | 7 | 2 | 126 | ✅ Done |
-| T3-06 | Seeded PRNG (seed do scenario runner sở hữu): `Random(seed)` không bao giờ gọi `random.random()` global | `src/scheduler.py` | **Khôi** | 9 | 6 | 1 | 54 | ✅ Done (bug SCENARIO_START/END/NODE_INIT không có trong EventType enum; SEND event ghi trước DELIVER nhưng có logical_time cao hơn → refactor send() để defer SEND event logging đến lúc deliver, đảm bảo monotonic -> fixed) |
+| T3-06 | Seeded PRNG (seed do scenario runner sở hữu): `Random(seed)` không bao giờ gọi `random.random()` global | `src/scheduler.py` | **Khôi** | 9 | 6 | 1 | 54 | ✅ Done
 | T3-07 | Fault injector: drop / delay / duplicate / reorder từ scenario config; dùng PRNG từ T3-06 | `src/fault_injector.py` | **Khánh** | 8 | 7 | 2 | 112 |
 | T3-08 | Bandwidth limit và rate limiting: kiểm tra bytes/tick không vượt `bandwidth_limit_bytes_per_tick` | `src/network.py` | **Hiếu** | 6 | 6 | 1 | 36 | ✅ Done |
 | T3-09 | Peer blocking/unblocking tạm thời: `block_peer(id)` / `unblock_peer(id)` log `PEER_BLOCK`/`PEER_UNBLOCK` | `src/network.py` | **Bảo** | 6 | 5 | 1 | 30 |
