@@ -59,7 +59,7 @@ class State:
         """Create a state, optionally seeded from an existing map."""
         self._entries: dict[str, bytes] = {}
         if entries:
-            for key, value in entries.items():
+            for key, value in sorted(entries.items()):
                 self.insert(key, value)
 
     # -- mutation ----------------------------------------------------------

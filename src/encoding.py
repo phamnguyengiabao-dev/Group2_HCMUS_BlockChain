@@ -71,7 +71,7 @@ def encode_sorted_map(values: dict[str, bytes]) -> bytes:
 
     normalized_entries: list[tuple[bytes, bytes]] = []
 
-    for key, value in values.items():
+    for key, value in sorted(values.items()):
         if not isinstance(key, str):
             raise TypeError("Map key must be a string")
 
