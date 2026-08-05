@@ -27,6 +27,7 @@ from src.event_log import (
     EventLog,
     EventType,
 )
+from src.scheduler import Scheduler
 
 
 @dataclass(
@@ -200,24 +201,29 @@ class Envelope:
 
 
 class Network:
+    """Deterministic simulated network backed by :class:`Scheduler`.
+
+    ``send`` retains the original T3-04 behavior (it returns an
+    :class:`Envelope` and writes ``SEND`` immediately) while also queuing the
+    envelope for deterministic delivery.  Callers that need the old explicit
+    flow may still call ``deliver(envelope)``; callers driving a simulation can
+    use ``run_next`` or ``run``.
+
+    Bandwidth is charged by payload bytes at the actual logical delivery tick.
+    A message that does not fit in the remaining budget is re-queued at the
+    earliest later tick with enough capacity.  Payloads larger than one full
+    tick are rejected up front so deferral cannot loop forever.
     """
-    Minimal deterministic network for T3-04.
 
-    This class integrates Envelope with T3-01's EventLog.
-
-    T3-04 currently:
-    - creates envelopes
-    - assigns deterministic insertion sequence numbers
-    - emits SEND events
-    - emits DELIVER events
-
-    Delay, drop, duplication, peer blocking, and fault injection
-    belong to later network tasks.
-    """
+    DEFAULT_BANDWIDTH_LIMIT_BYTES_PER_TICK = 1_048_576
 
     def __init__(
         self,
         event_log: EventLog,
+        scheduler: Scheduler | None = None,
+        bandwidth_limit_bytes_per_tick: int | None = (
+            DEFAULT_BANDWIDTH_LIMIT_BYTES_PER_TICK
+        ),
     ) -> None:
         if not isinstance(
             event_log,
@@ -227,11 +233,63 @@ class Network:
                 "event_log must be EventLog"
             )
 
+        if scheduler is not None and not isinstance(
+            scheduler,
+            Scheduler,
+        ):
+            raise TypeError(
+                "scheduler must be Scheduler"
+            )
+
         self._event_log = event_log
+        self._scheduler = (
+            scheduler
+            if scheduler is not None
+            else Scheduler()
+        )
+        self._bandwidth_limit = self._validate_bandwidth_limit(
+            bandwidth_limit_bytes_per_tick
+        )
 
         self._next_insertion_seq = 0
-
         self._next_event_no = 0
+
+        # Keys are current scheduler ordering keys.  Deferred envelopes are
+        # represented by a new key (later logical time) while retaining the
+        # original insertion sequence.
+        self._pending: dict[tuple[int, int], Envelope] = {}
+        self._contexts: dict[tuple[int, int], tuple[int, int]] = {}
+        self._bytes_by_tick: dict[int, int] = {}
+        self._delivered_sequences: set[int] = set()
+
+    @staticmethod
+    def _validate_bandwidth_limit(
+        value: int | None,
+    ) -> int | None:
+        if value is None:
+            return None
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise TypeError(
+                "bandwidth_limit_bytes_per_tick must be a positive int or None"
+            )
+        if value <= 0:
+            raise ValueError(
+                "bandwidth_limit_bytes_per_tick must be positive"
+            )
+        return value
+
+    def _validate_payload_size(self, payload: bytes) -> None:
+        if not isinstance(payload, bytes):
+            raise TypeError(
+                "payload must be bytes"
+            )
+        if (
+            self._bandwidth_limit is not None
+            and len(payload) > self._bandwidth_limit
+        ):
+            raise ValueError(
+                "payload exceeds bandwidth limit for one logical tick"
+            )
 
     def _write_event(
         self,
@@ -248,9 +306,7 @@ class Network:
         self._next_event_no += 1
 
         self._event_log.write_event(
-            event_no=(
-                self._next_event_no
-            ),
+            event_no=self._next_event_no,
             logical_time=logical_time,
             node_id=node_id,
             event_type=event_type,
@@ -258,6 +314,18 @@ class Network:
             round=round,
             details=details,
         )
+
+    def _remember_pending(
+        self,
+        envelope: Envelope,
+        *,
+        height: int,
+        round: int,
+    ) -> Envelope:
+        key = envelope.ordering_key()
+        self._pending[key] = envelope
+        self._contexts[key] = (height, round)
+        return envelope
 
     def send(
         self,
@@ -269,23 +337,26 @@ class Network:
         height: int = 0,
         round: int = 0,
     ) -> Envelope:
-        """
-        Create an envelope and emit a canonical SEND event.
+        """Create, log, and queue an envelope with a monotonic sequence."""
 
-        The insertion sequence is generated internally so it is
-        deterministic and monotonically increasing.
-        """
+        self._validate_payload_size(payload)
 
         envelope = Envelope(
             sender=sender,
             receiver=receiver,
             payload=payload,
             logical_time=logical_time,
-            insertion_seq=(
-                self._next_insertion_seq
-            ),
+            insertion_seq=self._next_insertion_seq,
         )
 
+        # Schedule before emitting SEND so an invalid logical time cannot
+        # leave a misleading event in the canonical log.
+        self._scheduler.schedule(envelope)
+        self._remember_pending(
+            envelope,
+            height=height,
+            round=round,
+        )
         self._next_insertion_seq += 1
 
         self._write_event(
@@ -296,16 +367,165 @@ class Network:
             round=round,
             details={
                 "receiver": receiver,
-                "insertion_seq": (
-                    envelope.insertion_seq
-                ),
-                "payload_size": (
-                    len(payload)
-                ),
+                "insertion_seq": envelope.insertion_seq,
+                "payload_size": len(payload),
             },
         )
 
         return envelope
+
+    def enqueue(
+        self,
+        envelope: Envelope,
+        *,
+        height: int = 0,
+        round: int = 0,
+    ) -> Envelope:
+        """Queue an existing envelope for deterministic delivery."""
+
+        if not isinstance(envelope, Envelope):
+            raise TypeError(
+                "envelope must be Envelope"
+            )
+        self._validate_payload_size(envelope.payload)
+        self._scheduler.schedule(envelope)
+        return self._remember_pending(
+            envelope,
+            height=height,
+            round=round,
+        )
+
+    def schedule(
+        self,
+        envelope: Envelope,
+        *,
+        height: int = 0,
+        round: int = 0,
+    ) -> Envelope:
+        """Alias for :meth:`enqueue`."""
+
+        return self.enqueue(
+            envelope,
+            height=height,
+            round=round,
+        )
+
+    def _earliest_delivery_tick(
+        self,
+        requested_tick: int,
+        payload_size: int,
+    ) -> int:
+        if self._bandwidth_limit is None:
+            return requested_tick
+
+        tick = max(
+            requested_tick,
+            self._scheduler.logical_time,
+        )
+        while (
+            self._bytes_by_tick.get(tick, 0) + payload_size
+            > self._bandwidth_limit
+        ):
+            tick += 1
+        return tick
+
+    def _try_deliver(
+        self,
+        envelope: Envelope,
+        *,
+        height: int,
+        round: int,
+    ) -> bytes | None:
+        """Deliver one popped envelope, or requeue it when rate limited."""
+
+        payload_size = len(envelope.payload)
+        tick = self._earliest_delivery_tick(
+            envelope.logical_time,
+            payload_size,
+        )
+
+        if tick != envelope.logical_time:
+            deferred = Envelope(
+                sender=envelope.sender,
+                receiver=envelope.receiver,
+                payload=envelope.payload,
+                logical_time=tick,
+                insertion_seq=envelope.insertion_seq,
+            )
+            self._scheduler.schedule(deferred)
+            self._remember_pending(
+                deferred,
+                height=height,
+                round=round,
+            )
+            return None
+
+        if self._bandwidth_limit is not None:
+            self._bytes_by_tick[tick] = (
+                self._bytes_by_tick.get(tick, 0) + payload_size
+            )
+
+        self._write_event(
+            logical_time=tick,
+            node_id=envelope.receiver,
+            event_type=EventType.DELIVER,
+            height=height,
+            round=round,
+            details={
+                "sender": envelope.sender,
+                "insertion_seq": envelope.insertion_seq,
+                "payload_size": payload_size,
+            },
+        )
+        return envelope.payload
+
+    def _pop_and_deliver_one(
+        self,
+    ) -> tuple[Envelope, bytes] | None:
+        """Pop until one envelope is actually delivered."""
+
+        while not self._scheduler.empty():
+            envelope = self._scheduler.pop()
+            if envelope is None:
+                return None
+
+            key = envelope.ordering_key()
+            context = self._contexts.pop(
+                key,
+                (0, 0),
+            )
+            self._pending.pop(key, None)
+
+            payload = self._try_deliver(
+                envelope,
+                height=context[0],
+                round=context[1],
+            )
+            if payload is None:
+                continue
+            self._delivered_sequences.add(
+                envelope.insertion_seq
+            )
+            return envelope, payload
+        return None
+
+    def run_next(self) -> bytes | None:
+        """Deliver the next queued message, respecting bandwidth."""
+
+        result = self._pop_and_deliver_one()
+        if result is None:
+            return None
+        return result[1]
+
+    def run(self) -> list[bytes]:
+        """Drain all queued messages and return payloads in delivery order."""
+
+        delivered: list[bytes] = []
+        while not self._scheduler.empty():
+            payload = self.run_next()
+            if payload is not None:
+                delivered.append(payload)
+        return delivered
 
     def deliver(
         self,
@@ -314,46 +534,63 @@ class Network:
         height: int = 0,
         round: int = 0,
     ) -> bytes:
-        """
-        Deliver an envelope and emit a canonical DELIVER event.
+        """Deliver ``envelope`` while preserving scheduler ordering.
 
-        T3-04 returns the raw payload. Actual node dispatch can be
-        added by later tasks.
+        ``send`` already queues its return value.  Explicit delivery therefore
+        drains queued messages in canonical order until the requested
+        insertion sequence is delivered, retaining the historical return of
+        raw payload bytes.  An envelope not previously queued is enqueued
+        first, which keeps the method useful for legacy callers constructing
+        envelopes directly.
         """
 
-        if not isinstance(
-            envelope,
-            Envelope,
-        ):
+        if not isinstance(envelope, Envelope):
             raise TypeError(
                 "envelope must be Envelope"
             )
+        self._validate_payload_size(envelope.payload)
 
-        self._write_event(
-            logical_time=(
-                envelope.logical_time
-            ),
-            node_id=(
-                envelope.receiver
-            ),
-            event_type=(
-                EventType.DELIVER
-            ),
-            height=height,
-            round=round,
-            details={
-                "sender": (
-                    envelope.sender
-                ),
-                "insertion_seq": (
-                    envelope.insertion_seq
-                ),
-                "payload_size": (
-                    len(
-                        envelope.payload
-                    )
-                ),
-            },
-        )
+        if envelope.insertion_seq in self._delivered_sequences:
+            raise ValueError(
+                "envelope already delivered"
+            )
 
-        return envelope.payload
+        key = envelope.ordering_key()
+        if key not in self._pending:
+            self.enqueue(
+                envelope,
+                height=height,
+                round=round,
+            )
+
+        target_seq = envelope.insertion_seq
+        while True:
+            result = self._pop_and_deliver_one()
+            if result is None:
+                raise RuntimeError(
+                    "envelope disappeared from scheduler"
+                )
+            delivered_envelope, payload = result
+            if delivered_envelope.insertion_seq == target_seq:
+                return payload
+
+    @property
+    def scheduler(self) -> Scheduler:
+        """Expose the owned scheduler for deterministic simulation drivers."""
+
+        return self._scheduler
+
+    @property
+    def bandwidth_limit_bytes_per_tick(self) -> int | None:
+        """Configured per-tick payload-byte limit, or ``None`` for unlimited."""
+
+        return self._bandwidth_limit
+
+    @property
+    def logical_time(self) -> int:
+        """Current logical time owned by the scheduler."""
+
+        return self._scheduler.logical_time
+
+    def __len__(self) -> int:
+        return len(self._scheduler)

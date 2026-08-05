@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from src.encoding import (
     encode_bytes,
     encode_str,
@@ -157,3 +159,129 @@ def test_insertion_sequence_increases(
         second.insertion_seq
         == 1
     )
+
+
+def test_network_scheduler_delivers_same_tick_in_insertion_order(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.chdir(tmp_path)
+    log = EventLog("test", "run_1")
+    network = Network(log, bandwidth_limit_bytes_per_tick=5)
+
+    first = network.send(
+        sender="A",
+        receiver="B",
+        payload=b"123",
+        logical_time=0,
+    )
+    second = network.send(
+        sender="A",
+        receiver="B",
+        payload=b"45",
+        logical_time=0,
+    )
+
+    assert network.run() == [first.payload, second.payload]
+    log.close()
+    events = [json.loads(line) for line in log.log_path.read_text().splitlines()]
+    deliveries = [event for event in events if event["event_type"] == "DELIVER"]
+    assert [event["logical_time"] for event in deliveries] == [0, 0]
+    assert [event["details"]["insertion_seq"] for event in deliveries] == [
+        first.insertion_seq,
+        second.insertion_seq,
+    ]
+
+
+def test_network_bandwidth_defers_overflow_to_next_tick(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.chdir(tmp_path)
+    log = EventLog("test", "run_1")
+    network = Network(log, bandwidth_limit_bytes_per_tick=5)
+
+    first = network.send(
+        sender="A",
+        receiver="B",
+        payload=b"1234",
+        logical_time=7,
+    )
+    second = network.send(
+        sender="A",
+        receiver="B",
+        payload=b"56",
+        logical_time=7,
+    )
+
+    assert network.run() == [first.payload, second.payload]
+    log.close()
+    events = [json.loads(line) for line in log.log_path.read_text().splitlines()]
+    deliveries = [event for event in events if event["event_type"] == "DELIVER"]
+    assert [event["logical_time"] for event in deliveries] == [7, 8]
+
+
+def test_network_bandwidth_exact_fit_and_independent_ticks(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.chdir(tmp_path)
+    log = EventLog("test", "run_1")
+    network = Network(log, bandwidth_limit_bytes_per_tick=5)
+
+    network.send(sender="A", receiver="B", payload=b"123", logical_time=2)
+    network.send(sender="A", receiver="B", payload=b"45", logical_time=2)
+    network.send(sender="A", receiver="B", payload=b"67890", logical_time=3)
+
+    assert len(network.run()) == 3
+    log.close()
+    events = [json.loads(line) for line in log.log_path.read_text().splitlines()]
+    deliveries = [event for event in events if event["event_type"] == "DELIVER"]
+    assert [event["logical_time"] for event in deliveries] == [2, 2, 3]
+
+
+def test_network_rejects_oversized_payload_and_invalid_bandwidth_limit(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.chdir(tmp_path)
+    for invalid in (0, -1, True, 1.5):
+        invalid_log = EventLog("test", f"run_{invalid}")
+        with pytest.raises((TypeError, ValueError)):
+            Network(
+                invalid_log,
+                bandwidth_limit_bytes_per_tick=invalid,
+            )
+        invalid_log.close()
+
+    log = EventLog("test", "run_ok")
+    network = Network(log, bandwidth_limit_bytes_per_tick=3)
+    with pytest.raises(ValueError, match="payload"):
+        network.send(sender="A", receiver="B", payload=b"1234", logical_time=0)
+    log.close()
+
+
+def test_network_repeated_explicit_delivery_is_rejected(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.chdir(tmp_path)
+    log = EventLog("test", "run_repeat")
+    network = Network(log, bandwidth_limit_bytes_per_tick=5)
+    envelope = network.send(
+        sender="A",
+        receiver="B",
+        payload=b"ok",
+        logical_time=0,
+    )
+
+    assert network.deliver(envelope) == b"ok"
+    with pytest.raises(ValueError, match="already delivered"):
+        network.deliver(envelope)
+
+    log.close()
+    events = [json.loads(line) for line in log.log_path.read_text().splitlines()]
+    assert [event["event_type"] for event in events] == [
+        "SEND",
+        "DELIVER",
+    ]
