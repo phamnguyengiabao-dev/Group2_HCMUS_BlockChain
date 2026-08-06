@@ -285,3 +285,94 @@ def test_network_repeated_explicit_delivery_is_rejected(
         "SEND",
         "DELIVER",
     ]
+
+
+def test_block_peer_logs_event(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.chdir(tmp_path)
+    log = EventLog("test", "run_block")
+    network = Network(log)
+
+    network.block_peer("validator_00000001")
+
+    log.close()
+    events = [json.loads(line) for line in log.log_path.read_text().splitlines()]
+    assert len(events) == 1
+    assert events[0]["event_type"] == "PEER_BLOCK"
+    assert events[0]["node_id"] == "validator_00000001"
+    assert events[0]["details"]["peer_id"] == "validator_00000001"
+
+
+def test_unblock_peer_logs_event(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.chdir(tmp_path)
+    log = EventLog("test", "run_unblock")
+    network = Network(log)
+
+    network.unblock_peer("validator_00000002")
+
+    log.close()
+    events = [json.loads(line) for line in log.log_path.read_text().splitlines()]
+    assert len(events) == 1
+    assert events[0]["event_type"] == "PEER_UNBLOCK"
+    assert events[0]["node_id"] == "validator_00000002"
+    assert events[0]["details"]["peer_id"] == "validator_00000002"
+
+
+def test_block_peer_validation(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.chdir(tmp_path)
+    log = EventLog("test", "run_validation")
+    network = Network(log)
+
+    with pytest.raises(TypeError, match="peer_id must be str"):
+        network.block_peer(123)
+
+    with pytest.raises(ValueError, match="peer_id must not be empty"):
+        network.block_peer("")
+
+    log.close()
+
+
+def test_unblock_peer_validation(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.chdir(tmp_path)
+    log = EventLog("test", "run_unblock_validation")
+    network = Network(log)
+
+    with pytest.raises(TypeError, match="peer_id must be str"):
+        network.unblock_peer(456)
+
+    with pytest.raises(ValueError, match="peer_id must not be empty"):
+        network.unblock_peer("")
+
+    log.close()
+
+
+def test_block_unblock_sequence(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.chdir(tmp_path)
+    log = EventLog("test", "run_sequence")
+    network = Network(log)
+
+    network.block_peer("validator_00000003")
+    network.unblock_peer("validator_00000003")
+    network.block_peer("validator_00000003")
+
+    log.close()
+    events = [json.loads(line) for line in log.log_path.read_text().splitlines()]
+    assert [e["event_type"] for e in events] == [
+        "PEER_BLOCK",
+        "PEER_UNBLOCK",
+        "PEER_BLOCK",
+    ]

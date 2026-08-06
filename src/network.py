@@ -618,3 +618,45 @@ class Network:
 
     def __len__(self) -> int:
         return len(self._scheduler)
+
+    def block_peer(self, peer_id: str) -> None:
+        """Block a peer - all incoming messages from that peer are dropped.
+
+        Args:
+            peer_id: The validator ID to block.
+        """
+        if not isinstance(peer_id, str):
+            raise TypeError("peer_id must be str")
+        if peer_id == "":
+            raise ValueError("peer_id must not be empty")
+
+        # Log PEER_BLOCK event
+        self._write_event(
+            logical_time=self._scheduler.logical_time,
+            node_id=peer_id,
+            event_type=EventType.PEER_BLOCK,
+            height=0,
+            round=0,
+            details={"peer_id": peer_id},
+        )
+
+    def unblock_peer(self, peer_id: str) -> None:
+        """Unblock a previously blocked peer.
+
+        Args:
+            peer_id: The validator ID to unblock.
+        """
+        if not isinstance(peer_id, str):
+            raise TypeError("peer_id must be str")
+        if peer_id == "":
+            raise ValueError("peer_id must not be empty")
+
+        # Log PEER_UNBLOCK event
+        self._write_event(
+            logical_time=self._scheduler.logical_time,
+            node_id=peer_id,
+            event_type=EventType.PEER_UNBLOCK,
+            height=0,
+            round=0,
+            details={"peer_id": peer_id},
+        )
