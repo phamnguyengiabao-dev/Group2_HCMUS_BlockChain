@@ -224,6 +224,7 @@ class Network:
         bandwidth_limit_bytes_per_tick: int | None = (
             DEFAULT_BANDWIDTH_LIMIT_BYTES_PER_TICK
         ),
+        event_no_counter: "Callable[[], int] | None" = None,
     ) -> None:
         if not isinstance(
             event_log,
@@ -251,8 +252,14 @@ class Network:
             bandwidth_limit_bytes_per_tick
         )
 
-        self._next_insertion_seq = 0
+
+        # If the caller (e.g. ScenarioRunner) already owns event_no,
+        # inject it here via `event_no_counter`so Network never assigns a number colliding with something written before/after it.
+        # Falls back to a private counter starting at 0 only when Network is used standalone.
+        self._event_no_counter = event_no_counter
         self._next_event_no = 0
+        self._next_insertion_seq = 0
+        
         self._last_event_logical_time = 0
 
         # SEND events are deferred until the envelope is actually delivered
@@ -297,6 +304,12 @@ class Network:
                 "payload exceeds bandwidth limit for one logical tick"
             )
 
+    def _next_event_no_value(self) -> int:
+        if self._event_no_counter is not None:
+            return self._event_no_counter()
+        self._next_event_no += 1
+        return self._next_event_no
+
     def _write_event(
         self,
         *,
@@ -309,7 +322,7 @@ class Network:
     ) -> None:
         """Write one T3-01 canonical event."""
 
-        self._next_event_no += 1
+        event_no = self._next_event_no_value()
         # Clamp logical_time upward to maintain monotonicity in the event
         # log.  Normally SEND and DELIVER are written in the same _try_deliver
         # call so their times are already ordered; the clamp is a safety net.
@@ -317,7 +330,7 @@ class Network:
         self._last_event_logical_time = written_time
 
         self._event_log.write_event(
-            event_no=self._next_event_no,
+            event_no=event_no,
             logical_time=written_time,
             node_id=node_id,
             event_type=event_type,
