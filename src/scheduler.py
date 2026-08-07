@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import heapq
 import random
-from typing import Callable, Sequence, TYPE_CHECKING
+from typing import Any, Callable, Sequence, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover - imported only for static type checkers
     from src.network import Envelope

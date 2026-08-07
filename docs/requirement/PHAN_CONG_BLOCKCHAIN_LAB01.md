@@ -178,17 +178,17 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 | Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
 |---------|-----------|------|-------|---------|--------|------|----------|------------|
-| T3-11 | Message Router: kiểm tra envelope shape, chain_id, sender identity, chữ ký; router không tin metadata — chỉ tin chữ ký | `src/router.py` | **Khôi** | 8 | 7 | 2 | 112 |
-| T3-12 | Router ghi log `REJECT` với rejection code cụ thể cho từng guard thất bại | `src/router.py` | **Hiếu** | 7 | 5 | 1 | 35 |
-| T3-13 | Router không relay object không hợp lệ — drop hoàn toàn sau khi log | `src/router.py` | **Khôi** | 8 | 4 | 1 | 32 |
+| T3-11 | Message Router: kiểm tra envelope shape, chain_id, sender identity, chữ ký; router không tin metadata — chỉ tin chữ ký | `src/router.py` | **Khôi** | 8 | 7 | 2 | 112 | ✅ Done — 12 tests pass |
+| T3-12 | Router ghi log `REJECT` với rejection code cụ thể cho từng guard thất bại | `src/router.py` | **Hiếu** | 7 | 5 | 1 | 35 | ✅ Done |
+| T3-13 | Router không relay object không hợp lệ — drop hoàn toàn sau khi log | `src/router.py` | **Khôi** | 8 | 4 | 1 | 32 | ✅ Done |
 
 ### 3D — Scenario Runner (`src/scenario.py`)
 
 | Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
 |---------|-----------|------|-------|---------|--------|------|----------|------------|
-| T3-14 | Scenario Runner: load config → khởi tạo nodes → seed PRNG → chạy simulation loop → shutdown | `src/scenario.py` | **Khánh** | 9 | 8 | 3 | 216 |
-| T3-15 | Ghi `spec_version` và `config_fingerprint` (SHA-256 của sorted JSON config) vào đầu mỗi log | `src/scenario.py` | **Hiếu** | 7 | 4 | 1 | 28 |
-| T3-16 | Assertion engine: sau simulation kiểm tra safety (không 2 hash cùng height) và liveness (chain tiến triển) | `src/scenario.py` | **Khôi** | 9 | 7 | 2 | 126 |
+| T3-14 | Scenario Runner: load config → khởi tạo nodes → seed PRNG → chạy simulation loop → shutdown | `src/scenario.py` | **Khánh** | 9 | 8 | 3 | 216 | ✅ Done — ScenarioRunner với load/run/check_assertions/shutdown |
+| T3-15 | Ghi `spec_version` và `config_fingerprint` (SHA-256 của sorted JSON config) vào đầu mỗi log | `src/scenario.py` | **Hiếu** | 7 | 4 | 1 | 28 | ✅ Done |
+| T3-16 | Assertion engine: sau simulation kiểm tra safety (không 2 hash cùng height) và liveness (chain tiến triển) | `src/scenario.py` | **Khôi** | 9 | 7 | 2 | 126 | ✅ Done — _assert_safety() + _assert_liveness() |
 
 **✅ Milestone 3 done khi:** Scripted delivery sequence (duplicate/reorder) replay byte-identical.
 
@@ -204,23 +204,23 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 | Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
 |---------|-----------|------|-------|---------|--------|------|----------|------------|
-| T4-01 | ConsensusState per height: `round`, `locked_block_hash`, `locked_round`, `valid_block_hash`, `prevotes`, `precommits` | `src/consensus.py` | **Hiếu** | 9 | 8 | 2 | 144 |
-| T4-02 | Proposer selection: `validator_set[sorted][(height + round) % n]`; dùng sorted validator set từ T1-09 | `src/consensus.py` | **Khánh** | 9 | 5 | 1 | 45 |
-| T4-03 | Proposal handler: proposer broadcast HEADER trước rồi BODY; non-proposer chờ proposal timeout rồi prevote NIL | `src/consensus.py` | **Khôi** | 9 | 8 | 2 | 144 |
-| T4-04 | Prevote guard (F-35): prevote block nếu unlocked hoặc khớp lock; prevote block khác chỉ khi có quorum prevote later-round; ngược lại prevote NIL | `src/consensus.py` | **Hiếu** | 9 | 9 | 2 | 162 |
-| T4-05 | Lock logic (F-36): quorum prevote non-NIL tại round r → set `locked_block_hash = block`, `locked_round = r`, `valid_block_hash = block` | `src/consensus.py` | **Khánh** | 9 | 8 | 1 | 72 |
-| T4-06 | Precommit logic (F-37): quorum prevote non-NIL → precommit block; quorum prevote NIL hoặc timeout → precommit NIL | `src/consensus.py` | **Khôi** | 9 | 8 | 1 | 72 |
-| T4-07 | Finalization (F-38): quorum precommit non-NIL → xác thực lại block → append ledger → commit state → reset consensus state → start height+1 round 0 | `src/consensus.py` | **Huy** | 10 | 9 | 2 | 180 |
-| T4-08 | Round change (F-39): precommit timeout → tăng round → reset vote sets theo round → giữ nguyên locks | `src/consensus.py` | **Bảo** | 9 | 7 | 1 | 63 |
-| T4-09 | "Gửi tối đa một vote" guard (F-33): enforce per `(height, round, phase)` — không ký 2 votes cùng phase | `src/consensus.py` | **Khánh** | 9 | 5 | 1 | 45 |
+| T4-01 | ConsensusState per height: `round`, `locked_block_hash`, `locked_round`, `valid_block_hash`, `prevotes`, `precommits` | `src/consensus.py` | **Hiếu** | 9 | 8 | 2 | 144 | ✅ Done — 10 tests pass |
+| T4-02 | Proposer selection: `validator_set[sorted][(height + round) % n]`; dùng sorted validator set từ T1-09 | `src/consensus.py` | **Khánh** | 9 | 5 | 1 | 45 | ✅ Done — 8 tests pass |
+| T4-03 | Proposal handler: proposer broadcast HEADER trước rồi BODY; non-proposer chờ proposal timeout rồi prevote NIL | `src/consensus.py` | **Khôi** | 9 | 8 | 2 | 144 | ✅ Done — propose() + schedule/handle_proposal_timeout() |
+| T4-04 | Prevote guard (F-35): prevote block nếu unlocked hoặc khớp lock; prevote block khác chỉ khi có quorum prevote later-round; ngược lại prevote NIL | `src/consensus.py` | **Hiếu** | 9 | 9 | 2 | 162 | ✅ Done — prevote_block_or_nil() + make_prevote() |
+| T4-05 | Lock logic (F-36): quorum prevote non-NIL tại round r → set `locked_block_hash = block`, `locked_round = r`, `valid_block_hash = block` | `src/consensus.py` | **Khánh** | 9 | 8 | 1 | 72 | ✅ Done — apply_lock() |
+| T4-06 | Precommit logic (F-37): quorum prevote non-NIL → precommit block; quorum prevote NIL hoặc timeout → precommit NIL | `src/consensus.py` | **Khôi** | 9 | 8 | 1 | 72 | ✅ Done — make_precommit() |
+| T4-07 | Finalization (F-38): quorum precommit non-NIL → xác thực lại block → append ledger → commit state → reset consensus state → start height+1 round 0 | `src/consensus.py` | **Huy** | 10 | 9 | 2 | 180 | ✅ Done — try_finalize() |
+| T4-08 | Round change (F-39): precommit timeout → tăng round → reset vote sets theo round → giữ nguyên locks | `src/consensus.py` | **Bảo** | 9 | 7 | 1 | 63 | ✅ Done — do_round_change() |
+| T4-09 | "Gửi tối đa một vote" guard (F-33): enforce per `(height, round, phase)` — không ký 2 votes cùng phase | `src/consensus.py` | **Khánh** | 9 | 5 | 1 | 45 | ✅ Done — VoteSentTracker |
 
 ### 4B — Gossip & Crash Recovery (`src/gossip.py`, mở rộng `src/scenario.py`)
 
 | Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
 |---------|-----------|------|-------|---------|--------|------|----------|------------|
-| T4-10 | Gossip Service: sau finalize relay block và votes tới peers; log `SEND` event | `src/gossip.py` | **Huy** | 8 | 7 | 2 | 112 |
-| T4-11 | Crash simulation: dừng node tại logical_time chỉ định, xóa in-memory cache, giữ nguyên snapshot đã finalize; log `CRASH` | `src/scenario.py` | **Hiếu** | 8 | 6 | 1 | 48 |
-| T4-12 | Restart simulation: load snapshot từ ledger, rebuild consensus state từ network gossip; log `RESTART` | `src/scenario.py` | **Khôi** | 8 | 7 | 1 | 56 |
+| T4-10 | Gossip Service: sau finalize relay block và votes tới peers; log `SEND` event | `src/gossip.py` | **Huy** | 8 | 7 | 2 | 112 | ✅ Done — 10 tests pass |
+| T4-11 | Crash simulation: dừng node tại logical_time chỉ định, xóa in-memory cache, giữ nguyên snapshot đã finalize; log `CRASH` | `src/scenario.py` | **Hiếu** | 8 | 6 | 1 | 48 | ✅ Done — simulate_crash() |
+| T4-12 | Restart simulation: load snapshot từ ledger, rebuild consensus state từ network gossip; log `RESTART` | `src/scenario.py` | **Khôi** | 8 | 7 | 1 | 56 | ✅ Done — simulate_restart() |
 
 **✅ Milestone 4 done khi:** T1, T2, T5, T6, T7 pass với safety assertions bật.
 
@@ -236,22 +236,22 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 | Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
 |---------|-----------|------|-------|---------|--------|------|----------|------------|
-| T5-01 | Viết scenario T1 (normal run): 8 nodes, no fault, max_height=3 → assert mọi node finalize cùng height/hash/state_hash | `config/scenario_t1.json` + `tests/test_t1.py` | **Khánh** | 9 | 5 | 1 | 45 |
-| T5-02 | Viết scenario T2 (duplicate + reorder): inject duplicate messages và reorder → assert vote count đúng, không finalize xung đột | `config/scenario_t2.json` + `tests/test_t2.py` | **Khánh** | 9 | 6 | 1 | 54 |
-| T5-03 | Viết scenario T3 (bad signature + wrong domain): inject messages với signature sai, domain sai → assert router từ chối + log, không state transition | `config/scenario_t3.json` + `tests/test_t3.py` | **Hiếu** | 9 | 6 | 1 | 54 |
-| T5-04 | Viết scenario T4 (replay + duplicate tx): submit cùng tx_id 2 lần → assert tx_id chỉ được apply tối đa 1 lần | `config/scenario_t4.json` + `tests/test_t4.py` | **Khôi** | 9 | 6 | 1 | 54 |
-| T5-05 | Viết scenario T5 (drop/delay): drop và delay messages trước synchrony → assert safety bất biến, không 2 block hash cùng height | `config/scenario_t5.json` + `tests/test_t5.py` | **Huy** | 9 | 7 | 2 | 126 |
-| T5-06 | Viết scenario T6 (proposer crash): proposer im lặng tại height 1 → assert round change xảy ra, proposer khác finalize được | `config/scenario_t6.json` + `tests/test_t6.py` | **Huy** | 9 | 7 | 1 | 63 |
-| T5-07 | Viết scenario T7 (equivocation): f=2 validators gửi conflicting votes → assert equivocation logged, honest nodes không finalize xung đột | `config/scenario_t7.json` + `tests/test_t7.py` | **Khôi** | 9 | 8 | 2 | 144 |
-| T5-08 | Viết scenario T8 (determinism): cùng seed chạy 2 lần → assert log bytes byte-identical, state hash giống nhau | `config/scenario_t8.json` + `tests/test_t8.py` | **Khánh** | 10 | 5 | 1 | 50 |
+| T5-01 | Viết scenario T1 (normal run): 8 nodes, no fault, max_height=3 → assert mọi node finalize cùng height/hash/state_hash | `config/scenario_t1.json` + `tests/test_t1.py` | **Khánh** | 9 | 5 | 1 | 45 | ✅ Done — 3 tests PASS |
+| T5-02 | Viết scenario T2 (duplicate + reorder): inject duplicate messages và reorder → assert vote count đúng, không finalize xung đột | `config/scenario_t2.json` + `tests/test_t2.py` | **Khánh** | 9 | 6 | 1 | 54 | ✅ Done — 3 tests PASS |
+| T5-03 | Viết scenario T3 (bad signature + wrong domain): inject messages với signature sai, domain sai → assert router từ chối + log, không state transition | `config/scenario_t3.json` + `tests/test_t3.py` | **Hiếu** | 9 | 6 | 1 | 54 | ✅ Done — 7 tests PASS |
+| T5-04 | Viết scenario T4 (replay + duplicate tx): submit cùng tx_id 2 lần → assert tx_id chỉ được apply tối đa 1 lần | `config/scenario_t4.json` + `tests/test_t4.py` | **Khôi** | 9 | 6 | 1 | 54 | ✅ Done — 4 tests PASS |
+| T5-05 | Viết scenario T5 (drop/delay): drop và delay messages trước synchrony → assert safety bất biến, không 2 block hash cùng height | `config/scenario_t5.json` + `tests/test_t5.py` | **Huy** | 9 | 7 | 2 | 126 | ✅ Done — 2 tests PASS |
+| T5-06 | Viết scenario T6 (proposer crash): proposer im lặng tại height 1 → assert round change xảy ra, proposer khác finalize được | `config/scenario_t6.json` + `tests/test_t6.py` | **Huy** | 9 | 7 | 1 | 63 | ✅ Done — 2 tests PASS |
+| T5-07 | Viết scenario T7 (equivocation): f=2 validators gửi conflicting votes → assert equivocation logged, honest nodes không finalize xung đột | `config/scenario_t7.json` + `tests/test_t7.py` | **Khôi** | 9 | 8 | 2 | 144 | ✅ Done — 2 tests PASS |
+| T5-08 | Viết scenario T8 (determinism): cùng seed chạy 2 lần → assert log bytes byte-identical, state hash giống nhau | `config/scenario_t8.json` + `tests/test_t8.py` | **Khánh** | 10 | 5 | 1 | 50 | ✅ Done — 2 tests PASS |
 
 ### 5B — Summary, Report & Submit
 
 | Task ID | Công việc | File | Người | Ưu tiên | Độ khó | Ngày | Trọng số | Trạng thái |
 |---------|-----------|------|-------|---------|--------|------|----------|------------|
-| T5-09 | Export compact summary (`src/summary.py`): `(height, hash)` per node, state hash cuối, rejection counts theo lý do, SHA-256 của log | `src/summary.py` | **Hiếu** | 7 | 5 | 1 | 35 |
-| T5-10 | `--verify-determinism` script: chạy T8 scenario 2 lần, diff log bytes + state hash, exit 0 nếu identical | `tests/verify_determinism.py` | **Bảo** | 9 | 4 | 1 | 36 |
-| T5-11 | Viết `REPORT.pdf`: kết quả T1–T8 thực tế, phân tích safety/liveness, ≤ 10 trang | `REPORT.pdf` | **Huy** | 10 | 5 | 2 | 100 |
+| T5-09 | Export compact summary (`src/summary.py`): `(height, hash)` per node, state hash cuối, rejection counts theo lý do, SHA-256 của log | `src/summary.py` | **Hiếu** | 7 | 5 | 1 | 35 | ✅ Done — 13 tests pass |
+| T5-10 | `--verify-determinism` script: chạy T8 scenario 2 lần, diff log bytes + state hash, exit 0 nếu identical | `tests/verify_determinism.py` | **Bảo** | 9 | 4 | 1 | 36 | ✅ Done — PASS |
+| T5-11 | Viết `REPORT.md`: kết quả T1–T8 thực tế, phân tích safety/liveness, ≤ 10 trang | `docs/report/REPORT.md` | **Huy** | 10 | 5 | 2 | 100 | ✅ Done |
 
 **✅ Milestone 5 done khi:** Clean checkout chạy một lệnh → T1–T8 all pass, `--verify-determinism` pass, đủ artifacts.
 
@@ -277,9 +277,9 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G1 | T1-15 | Unit test transaction rejection *(chuyển từ Hiếu)* | 45 | ✅ Done |
 | G2 | T2-05 | Unit test block validation *(chuyển từ Hiếu)* | 54 | ✅ Done (commit `1389793`) |
 | G2 | T2-09 | Quorum counting `has_quorum()` | 54 | ✅ Done — 15 tests pass |
-| G3 | T3-09 | Peer blocking/unblocking | 30 | 🔲 Chưa làm |
-| G4 | T4-08 | Round change logic | 63 | 🔲 Chưa làm |
-| G5 | T5-10 | `--verify-determinism` script | 36 | 🔲 Chưa làm |
+| G3 | T3-09 | Peer blocking/unblocking | 30 | ✅ Done — block_peer()/unblock_peer() |
+| G4 | T4-08 | Round change logic | 63 | ✅ Done — do_round_change() |
+| G5 | T5-10 | `--verify-determinism` script | 36 | ✅ Done — tests/verify_determinism.py PASS |
 | **Subtotal coding G1–G5** | | | **303** | |
 
 **Phần G1–G5 — management tasks (tính điểm):**
