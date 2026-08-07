@@ -240,9 +240,23 @@ class ScenarioRunner:
         self.liveness_result = self._assert_liveness()
 
     def shutdown(self) -> None:
-        """Flush and close resources."""
+        """Write SCENARIO_END, flush and close resources."""
 
-        if self.event_log is not None:
+        if self.event_log is not None and not self.event_log._closed:
+            self.event_log.write_event(
+                event_no=self._next_event_no(),
+                logical_time=(
+                    self.scheduler.logical_time if self.scheduler is not None else 0
+                ),
+                node_id="system",
+                event_type=EventType.SCENARIO_END,
+                height=0,
+                round=0,
+                details={
+                    "scenario_id": self.scenario_config.get("scenario_id", ""),
+                    "total_events": self._event_no,
+                },
+            )
             self.event_log.close()
 
     def execute(self) -> list[bytes]:

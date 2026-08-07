@@ -315,3 +315,7 @@ blockchain/
 | `docs/ARCHITECTURE.md` | Ranh giới module, luồng thông điệp |
 | `docs/TEST_SPEC.md` | Schema log, bằng chứng kiểm thử |
 | `docs/IMPLEMENTATION_PLAN.md` | Các mốc tiến độ |
+
+
+github repo links:
+https://github.com/phamnguyengiabao-dev/Group2_HCMUS_BlockChain

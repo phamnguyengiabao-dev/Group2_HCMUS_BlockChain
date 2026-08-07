@@ -52,6 +52,42 @@ def clean_logs():
     yield
 
 
+def _make_event_log(scenario_id: str, run_id: str) -> EventLog:
+    """Create an EventLog and write the mandatory SCENARIO_START event."""
+    from src.event_log import EventType
+    log = EventLog(scenario_id=scenario_id, run_id=run_id)
+    log.write_event(
+        event_no=1,
+        logical_time=0,
+        node_id="system",
+        event_type=EventType.SCENARIO_START,
+        height=0,
+        round=0,
+        details={"scenario_id": scenario_id, "seed": 0, "spec_version": "0.1"},
+    )
+    return log
+
+
+def _read_events(event_log: EventLog) -> list[dict]:
+    """Write SCENARIO_END, close the log, and return all non-lifecycle events."""
+    from src.event_log import EventType
+    if not event_log._closed:
+        event_log.write_event(
+            event_no=event_log.event_count + 1,
+            logical_time=0,
+            node_id="system",
+            event_type=EventType.SCENARIO_END,
+            height=0,
+            round=0,
+            details={"scenario_id": "", "total_events": event_log.event_count + 1},
+        )
+        event_log.close()
+    lines = Path(event_log.log_path).read_text(encoding="utf-8").splitlines()
+    events = [json.loads(line) for line in lines]
+    # Return only the protocol events (skip SCENARIO_START / SCENARIO_END).
+    return [e for e in events if e["event_type"] not in ("SCENARIO_START", "SCENARIO_END")]
+
+
 @pytest.fixture(scope="module")
 def validators():
     return load_validator_keys()
@@ -203,12 +239,6 @@ def _envelope_for(sender: str, receiver: str, message, seq: int) -> Envelope:
     )
 
 
-def _read_events(event_log: EventLog) -> list[dict]:
-    event_log.close()
-    lines = Path(event_log.log_path).read_text(encoding="utf-8").splitlines()
-    return [json.loads(line) for line in lines]
-
-
 # ---------------------------------------------------------------------
 # Baseline sanity: valid messages are accepted (proves the rejections
 # below are caused by the injected fault, not a broken test setup)
@@ -216,7 +246,7 @@ def _read_events(event_log: EventLog) -> list[dict]:
 
 def test_router_accepts_valid_vote(validators):
     dispatched = []
-    event_log = EventLog(scenario_id="t3_baseline_vote", run_id="run1")
+    event_log = _make_event_log("t3_baseline_vote", "run1")
     node_ids = _node_ids(validators)
     router = _build_router(
         event_log=event_log, validators=validators, node_ids=node_ids,
@@ -231,12 +261,12 @@ def test_router_accepts_valid_vote(validators):
 
     assert result.accepted is True
     assert dispatched == [vote]
-    event_log.close()
+    _read_events(event_log)  # writes SCENARIO_END and closes
 
 
 def test_router_accepts_valid_header(validators):
     dispatched = []
-    event_log = EventLog(scenario_id="t3_baseline_header", run_id="run1")
+    event_log = _make_event_log("t3_baseline_header", "run1")
     node_ids = _node_ids(validators)
     proposer = validators[(1 + 0) % len(validators)]
     router = _build_router(
@@ -252,7 +282,7 @@ def test_router_accepts_valid_header(validators):
 
     assert result.accepted is True
     assert dispatched == [header]
-    event_log.close()
+    _read_events(event_log)  # writes SCENARIO_END and closes
 
 
 # ---------------------------------------------------------------------
@@ -261,7 +291,7 @@ def test_router_accepts_valid_header(validators):
 
 def test_router_rejects_vote_bad_signature(validators):
     dispatched = []
-    event_log = EventLog(scenario_id="t3_bad_sig_vote", run_id="run1")
+    event_log = _make_event_log("t3_bad_sig_vote", "run1")
     node_ids = _node_ids(validators)
     router = _build_router(
         event_log=event_log, validators=validators, node_ids=node_ids,
@@ -291,7 +321,7 @@ def test_router_rejects_vote_bad_signature(validators):
 
 def test_router_rejects_header_bad_signature(validators):
     dispatched = []
-    event_log = EventLog(scenario_id="t3_bad_sig_header", run_id="run1")
+    event_log = _make_event_log("t3_bad_sig_header", "run1")
     node_ids = _node_ids(validators)
     proposer = validators[(1 + 0) % len(validators)]
     router = _build_router(
@@ -321,7 +351,7 @@ def test_router_rejects_header_bad_signature(validators):
 
 def test_router_rejects_vote_wrong_domain(validators):
     dispatched = []
-    event_log = EventLog(scenario_id="t3_wrong_domain_vote", run_id="run1")
+    event_log = _make_event_log("t3_wrong_domain_vote", "run1")
     node_ids = _node_ids(validators)
     router = _build_router(
         event_log=event_log, validators=validators, node_ids=node_ids,
@@ -346,7 +376,7 @@ def test_router_rejects_vote_wrong_domain(validators):
 
 def test_router_rejects_header_wrong_domain(validators):
     dispatched = []
-    event_log = EventLog(scenario_id="t3_wrong_domain_header", run_id="run1")
+    event_log = _make_event_log("t3_wrong_domain_header", "run1")
     node_ids = _node_ids(validators)
     proposer = validators[(1 + 0) % len(validators)]
     router = _build_router(
@@ -388,7 +418,7 @@ def test_t3_rejected_messages_never_mutate_consensus_state(validators):
         else:
             prevotes.add(message)
 
-    event_log = EventLog(scenario_id="t3_no_state_transition", run_id="run1")
+    event_log = _make_event_log("t3_no_state_transition", "run1")
 
     vote_router = _build_router(
         event_log=event_log, validators=validators, node_ids=node_ids,
