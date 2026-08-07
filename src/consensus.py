@@ -32,6 +32,12 @@ Proposal handler + Timeout handling.
       non-proposer schedules a wakeup at current_time + proposal_timeout;
       if no valid proposal has been accepted by the time it fires, the
       node prevotes NIL for this (height, round) and broadcasts it.
+
+T4-04
+
+    Prevote guard (F-35): prevote the block if unlocked or if the lock matches; 
+    prevote a different block only if there is a quorum of prevotes for a later round; 
+    otherwise, prevote NIL.
 """
 
 from __future__ import annotations
@@ -487,3 +493,131 @@ def handle_proposal_timeout(
         )
 
     return vote       
+
+# ====================================================
+# T4-04
+# Prevote guard (F-35)
+# ====================================================
+
+def _has_later_round_prevote_quorum(
+    state: ConsensusState,
+    block_hash: bytes,
+    validator_count: int,
+) -> bool:
+    """
+    Return True iff block_hash already has a PREVOTE quorum
+    in any round greater than state.locked_round.
+    """
+
+    if state.locked_round is None:
+        return False
+
+    r = state.locked_round + 1
+
+    while r <= state.round:
+        if state.prevotes.has_quorum(
+            height=state.height,
+            round=r,
+            phase=PHASE_PREVOTE,
+            n=validator_count,
+            block_hash=block_hash,
+        ):
+            return True
+
+        r += 1
+
+    return False
+
+
+def prevote_block_or_nil(
+    state: ConsensusState,
+    *,
+    proposed_block_hash: bytes,
+    validator_count: int,
+) -> bytes | None:
+    """
+    F-35.
+
+    Rules
+
+    1. unlocked
+           -> prevote proposed block
+
+    2. locked on same block
+           -> prevote proposed block
+
+    3. locked on another block
+           -> only prevote proposed block if it already has
+              a later-round quorum
+
+    4. otherwise
+           -> prevote NIL
+    """
+
+    _check_hash(proposed_block_hash)
+
+    #
+    # unlocked
+    #
+
+    if state.locked_block_hash is None:
+        return proposed_block_hash
+
+    #
+    # already locked on this block
+    #
+
+    if state.locked_block_hash == proposed_block_hash:
+        return proposed_block_hash
+
+    #
+    # locked on another block
+    #
+
+    if _has_later_round_prevote_quorum(
+        state,
+        proposed_block_hash,
+        validator_count,
+    ):
+        return proposed_block_hash
+
+    #
+    # otherwise vote NIL
+    #
+
+    return None
+
+
+def make_prevote(
+    state: ConsensusState,
+    *,
+    chain_id: str,
+    self_identity: ValidatorIdentity,
+    proposed_block_hash: bytes,
+    validator_count: int,
+) -> Vote:
+    """
+    Produce one PREVOTE according to F-35.
+
+    The vote is stored in ConsensusState.prevotes before returning.
+    """
+
+    target = prevote_block_or_nil(
+        state,
+        proposed_block_hash=proposed_block_hash,
+        validator_count=validator_count,
+    )
+
+    vote = Vote.create_signed(
+        chain_id=chain_id,
+        height=state.height,
+        round=state.round,
+        phase=PHASE_PREVOTE,
+        block_hash_or_nil=target,
+        validator_pubkey=self_identity.public_key,
+        validator_privkey=self_identity.private_key,
+    )
+
+    state.prevotes.add(vote)
+
+    return vote

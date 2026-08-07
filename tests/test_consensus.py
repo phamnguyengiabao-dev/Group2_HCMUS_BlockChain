@@ -8,6 +8,8 @@ from src.consensus import (
     propose,
     schedule_proposal_timeout,
     select_proposer,
+    prevote_block_or_nil,
+    make_prevote,
 )
 from src.block import BlockHeader
 from src.identity import load_validator_keys
@@ -555,3 +557,172 @@ def test_handle_proposal_timeout_is_noop_when_proposal_already_valid(validators)
 
     assert vote is None
     assert network.run() == []  # nothing broadcast
+
+# ============================================================
+# T4-04
+# ============================================================
+
+def test_prevote_unlocked_returns_block():
+    state = ConsensusState(height=1)
+
+    block_hash = b"\x11" * 32
+
+    assert (
+        prevote_block_or_nil(
+            state,
+            proposed_block_hash=block_hash,
+            validator_count=8,
+        )
+        == block_hash
+    )
+
+
+def test_prevote_locked_same_block():
+    state = ConsensusState(height=1)
+
+    header = make_header()
+
+    state.block_store.store_header(header)
+
+    h = header.block_hash()
+
+    state.lock(h, 0)
+
+    assert (
+        prevote_block_or_nil(
+            state,
+            proposed_block_hash=h,
+            validator_count=8,
+        )
+        == h
+    )
+
+
+def test_prevote_locked_other_block_without_quorum():
+    state = ConsensusState(height=1)
+
+    header1 = make_header()
+
+    state.block_store.store_header(header1)
+
+    h1 = header1.block_hash()
+
+    state.lock(h1, 0)
+
+    h2 = b"\x44" * 32
+
+    assert (
+        prevote_block_or_nil(
+            state,
+            proposed_block_hash=h2,
+            validator_count=8,
+        )
+        is None
+    )
+
+
+def test_prevote_locked_other_block_with_later_round_quorum(validators):
+    state = ConsensusState(height=1)
+
+    header1 = make_header()
+
+    state.block_store.store_header(header1)
+
+    locked_hash = header1.block_hash()
+
+    state.lock(locked_hash, 0)
+
+    state.set_round(1)
+
+    proposed_hash = b"\x77" * 32
+
+    #
+    # n = 8
+    # f = 2
+    # quorum = 5
+    #
+
+    for validator in validators[:5]:
+
+        vote = validator.public_key
+
+        signed = __import__("src.vote", fromlist=["Vote"]).Vote.create_signed(
+            chain_id=CHAIN_ID,
+            height=1,
+            round=1,
+            phase=PHASE_PREVOTE,
+            block_hash_or_nil=proposed_hash,
+            validator_pubkey=validator.public_key,
+            validator_privkey=validator.private_key,
+        )
+
+        state.prevotes.add(signed)
+
+    assert (
+        prevote_block_or_nil(
+            state,
+            proposed_block_hash=proposed_hash,
+            validator_count=len(validators),
+        )
+        == proposed_hash
+    )
+
+
+def test_make_prevote_block(validators):
+    state = ConsensusState(height=1)
+
+    block_hash = b"\xaa" * 32
+
+    vote = make_prevote(
+        state,
+        chain_id=CHAIN_ID,
+        self_identity=validators[0],
+        proposed_block_hash=block_hash,
+        validator_count=len(validators),
+    )
+
+    assert vote.phase == PHASE_PREVOTE
+    assert vote.block_hash_or_nil == block_hash
+
+    stored = state.prevotes.get(
+        1,
+        0,
+        PHASE_PREVOTE,
+        validators[0].public_key,
+    )
+
+    assert stored == vote
+
+
+def test_make_prevote_nil_when_locked(validators):
+    state = ConsensusState(height=1)
+
+    header = make_header()
+
+    state.block_store.store_header(header)
+
+    state.lock(
+        header.block_hash(),
+        0,
+    )
+
+    other_hash = b"\xbb" * 32
+
+    vote = make_prevote(
+        state,
+        chain_id=CHAIN_ID,
+        self_identity=validators[0],
+        proposed_block_hash=other_hash,
+        validator_count=len(validators),
+    )
+
+    assert vote.block_hash_or_nil is None
+
+    stored = state.prevotes.get(
+        1,
+        0,
+        PHASE_PREVOTE,
+        validators[0].public_key,
+    )
+
+    assert stored == vote
