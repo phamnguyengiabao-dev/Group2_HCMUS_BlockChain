@@ -29,6 +29,23 @@ from src.encoding import (
 PUBLIC_KEY_LEN = 32
 SIGNATURE_LEN = 64
 
+# Need a corresponding decode function to parse it back into list[Transaction] when received.
+def encode_transaction_list(transactions: list[Transaction]) -> bytes:
+    """
+    Count-prefixed list of each transaction's signed_bytes(), mirroring
+    compute_tx_root's own count-prefix pattern:
+
+        encode_uint64(count) || encode_bytes(tx[0].signed_bytes())
+                              || encode_bytes(tx[1].signed_bytes())
+                              || ...
+
+    Each element is length-prefixed (via encode_bytes).
+    """
+    payload = bytearray(encode_uint64(len(transactions)))
+    for tx in transactions:
+        payload += encode_bytes(tx.signed_bytes())
+    return bytes(payload)
+
 
 @dataclass(frozen=True, slots=True)
 class Transaction:
