@@ -1,0 +1,298 @@
+/* ────────────────────────────────────────────────────────────────
+   Blockchain Visualizer — Catppuccin Mocha dark theme
+   ──────────────────────────────────────────────────────────────── */
+
+/* ── reset & base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #181825;
+  color: #CDD6F4;
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── app root ─────────────────────────────────────────────────── */
+#app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── header ───────────────────────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 24px;
+  background: #1E1E2E;
+  border-bottom: 1px solid #313244;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-icon  { font-size: 1.6rem; }
+
+.header-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #CDD6F4;
+  letter-spacing: -0.3px;
+}
+
+.header-chain-badge {
+  background: #313244;
+  color: #89B4FA;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.selector-label {
+  color: #A6ADC8;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.log-dropdown {
+  min-width: 280px;
+  font-size: 0.85rem;
+}
+
+/* Override Dash dropdown dark theme */
+.log-dropdown .Select-control,
+.log-dropdown .Select-menu-outer,
+.log-dropdown .Select-option {
+  background-color: #313244 !important;
+  color: #CDD6F4 !important;
+  border-color: #45475A !important;
+}
+
+.log-dropdown .Select-value-label { color: #CDD6F4 !important; }
+.log-dropdown .Select-arrow        { border-top-color: #89B4FA !important; }
+
+.btn-refresh {
+  background: #313244;
+  color: #89B4FA;
+  border: 1px solid #45475A;
+  border-radius: 6px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn-refresh:hover { background: #45475A; color: #CDD6F4; }
+
+/* ── stat cards ───────────────────────────────────────────────── */
+.stat-cards-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 24px 4px;
+}
+
+.stat-card {
+  background: #1E1E2E;
+  border-radius: 8px;
+  padding: 12px 18px;
+  border: 1px solid #313244;
+  min-width: 110px;
+  flex: 1 1 110px;
+  max-width: 160px;
+}
+
+.stat-label {
+  color: #A6ADC8;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #CDD6F4;
+  line-height: 1.1;
+}
+
+/* ── main tabs ────────────────────────────────────────────────── */
+.main-tabs {
+  flex: 1;
+  padding: 0 24px;
+}
+
+/* Dash tab container overrides */
+.main-tabs .tab--disabled { display: none; }
+
+.tab {
+  background: #1E1E2E !important;
+  color: #A6ADC8 !important;
+  border: none !important;
+  border-bottom: 3px solid transparent !important;
+  padding: 10px 18px !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab:hover { color: #CDD6F4 !important; }
+
+.tab-selected {
+  background: #1E1E2E !important;
+  color: #89B4FA !important;
+  border-bottom: 3px solid #89B4FA !important;
+}
+
+.tab-content {
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── panels ───────────────────────────────────────────────────── */
+.panel {
+  background: #1E1E2E;
+  border: 1px solid #313244;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+
+.panel h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #89B4FA;
+  margin-bottom: 12px;
+  letter-spacing: 0.2px;
+}
+
+.panel h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* ── two-column grid ──────────────────────────────────────────── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .two-col { grid-template-columns: 1fr; }
+}
+
+/* ── filter row ───────────────────────────────────────────────── */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 0 0 12px;
+}
+
+.filter-row label {
+  color: #A6ADC8;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.filter-dropdown {
+  min-width: 200px;
+  font-size: 0.82rem;
+}
+
+/* ── number input ─────────────────────────────────────────────── */
+.number-input {
+  background: #313244;
+  border: 1px solid #45475A;
+  border-radius: 6px;
+  color: #CDD6F4;
+  padding: 5px 10px;
+  font-size: 0.9rem;
+  width: 80px;
+  outline: none;
+}
+
+.number-input:focus { border-color: #89B4FA; }
+
+/* ── layout control buttons ───────────────────────────────────── */
+.layout-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.btn-layout {
+  background: #313244;
+  color: #A6ADC8;
+  border: 1px solid #45475A;
+  border-radius: 6px;
+  padding: 4px 14px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-layout:hover { background: #45475A; color: #CDD6F4; }
+
+/* ── legend row ───────────────────────────────────────────────── */
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 0;
+  font-size: 0.8rem;
+  color: #A6ADC8;
+}
+
+/* ── footer ───────────────────────────────────────────────────── */
+.app-footer {
+  padding: 10px 24px;
+  border-top: 1px solid #313244;
+  background: #1E1E2E;
+  color: #585B70;
+  font-size: 0.78rem;
+  display: flex;
+  gap: 8px;
+}
+
+/* ── scrollbar styling ────────────────────────────────────────── */
+::-webkit-scrollbar         { width: 6px; height: 6px; }
+::-webkit-scrollbar-track   { background: #181825; }
+::-webkit-scrollbar-thumb   { background: #45475A; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #585B70; }
+
+/* ── Plotly chart backgrounds ─────────────────────────────────── */
+.js-plotly-plot .plotly .main-svg { background: transparent !important; }
+
+/* ── DataTable override ───────────────────────────────────────── */
+.dash-table-container .dash-spreadsheet-container {
+  border-radius: 6px;
+  overflow: hidden;
+}

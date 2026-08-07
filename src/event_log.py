@@ -63,6 +63,11 @@ class EventType(str, Enum):
     CRASH = "CRASH"
     RESTART = "RESTART"
 
+    # Scenario lifecycle events (used by scenario_runner, T0-06).
+    SCENARIO_START = "SCENARIO_START"
+    SCENARIO_END = "SCENARIO_END"
+    NODE_INIT = "NODE_INIT"
+
 
 # Canonical event type names in fixed order.
 #
@@ -70,7 +75,7 @@ class EventType(str, Enum):
 # - schema inspection
 # - deterministic documentation
 # - tests
-# - validating that exactly 18 event types exist
+# - validating that exactly 21 event types exist
 CANONICAL_EVENT_TYPES: tuple[str, ...] = (
     "SEND",
     "DELIVER",
@@ -90,6 +95,9 @@ CANONICAL_EVENT_TYPES: tuple[str, ...] = (
     "EQUIVOCATION",
     "CRASH",
     "RESTART",
+    "SCENARIO_START",
+    "SCENARIO_END",
+    "NODE_INIT",
 )
 
 
@@ -151,20 +159,20 @@ def _validate_schema() -> None:
     This runs once when the module is imported.
     """
 
-    if len(CANONICAL_EVENT_TYPES) != 18:
+    if len(CANONICAL_EVENT_TYPES) != 21:
         raise RuntimeError(
-            "T3-01 requires exactly 18 event types, "
+            "T3-01 requires exactly 21 event types, "
             f"got {len(CANONICAL_EVENT_TYPES)}"
         )
 
-    if len(set(CANONICAL_EVENT_TYPES)) != 18:
+    if len(set(CANONICAL_EVENT_TYPES)) != 21:
         raise RuntimeError(
             "Canonical event types contain duplicates"
         )
 
-    if len(EventType) != 18:
+    if len(EventType) != 21:
         raise RuntimeError(
-            "EventType must contain exactly 18 values, "
+            "EventType must contain exactly 21 values, "
             f"got {len(EventType)}"
         )
 

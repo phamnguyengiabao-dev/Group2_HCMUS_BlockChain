@@ -1,0 +1,21 @@
+{
+  "scenario_id": "t5_drop_delay",
+  "seed": 5005,
+  "num_validators": 8,
+  "f": 2,
+  "max_height": 2,
+  "byzantine_nodes": [],
+  "transactions": [],
+  "topology": "full_mesh",
+  "faults": {
+    "drop_probability": 0.1,
+    "delay_probability": 0.4,
+    "max_delay": 5,
+    "duplicate_probability": 0.0,
+    "max_duplicates": 0,
+    "reorder_probability": 0.0
+  },
+  "message_drop_rate": 0.1,
+  "message_delay_rate": 0.4,
+  "node_crash_rate": 0
+}

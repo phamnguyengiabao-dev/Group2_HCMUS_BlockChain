@@ -11,11 +11,11 @@ from src.event_log import (
 
 
 def test_exactly_18_event_types():
-    assert len(EventType) == 18
+    assert len(EventType) == 21
 
     assert len(
         CANONICAL_EVENT_TYPES
-    ) == 18
+    ) == 21
 
 
 def test_event_type_order():
@@ -38,6 +38,9 @@ def test_event_type_order():
         "EQUIVOCATION",
         "CRASH",
         "RESTART",
+        "SCENARIO_START",
+        "SCENARIO_END",
+        "NODE_INIT",
     )
 
 
