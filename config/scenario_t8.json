@@ -1,5 +1,6 @@
 {
   "scenario_id": "t8_determinism",
+  "chain_id": "lab01-testnet",
   "seed": 8888,
   "num_validators": 8,
   "f": 2,
@@ -11,7 +12,15 @@
     }
   ],
   "topology": "full_mesh",
+  "faults": {
+    "drop_probability": 0.0,
+    "delay_probability": 0.35,
+    "max_delay": 3,
+    "duplicate_probability": 0.25,
+    "max_duplicates": 1,
+    "reorder_probability": 0.25
+  },
   "message_drop_rate": 0,
-  "message_delay_rate": 0,
+  "message_delay_rate": 0.35,
   "node_crash_rate": 0
 }
