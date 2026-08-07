@@ -37,8 +37,8 @@ def _load_config(name: str) -> dict:
 
 @pytest.fixture(autouse=True)
 def clean_logs():
+    shutil.rmtree("logs/t6_proposer_crash", ignore_errors=True)
     yield
-    shutil.rmtree("logs", ignore_errors=True)
 
 
 @dataclass

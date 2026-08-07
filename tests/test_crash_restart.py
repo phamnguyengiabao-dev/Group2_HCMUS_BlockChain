@@ -59,8 +59,8 @@ def make_finalized_ledger(chain_id: str, storage_path: str | None = None) -> tup
 
 @pytest.fixture(autouse=True)
 def clean_logs():
+    shutil.rmtree("logs/t_crash_restart", ignore_errors=True)
     yield
-    shutil.rmtree("logs", ignore_errors=True)
 
 
 # ================================================================

@@ -21,6 +21,13 @@ from src.state import State
 from src.transaction import Transaction
 from src.vote import PHASE_PRECOMMIT, PHASE_PREVOTE, Vote
 from src.vote_set import VoteOutcome
+from tests.consensus_log_helper import (
+    log_finalizes,
+    log_locks,
+    log_precommits,
+    log_prevotes,
+    log_propose,
+)
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 
@@ -32,8 +39,8 @@ def _load_config(name: str) -> dict:
 
 @pytest.fixture(autouse=True)
 def clean_logs():
+    shutil.rmtree("logs/t7_equivocation", ignore_errors=True)
     yield
-    shutil.rmtree("logs", ignore_errors=True)
 
 
 @dataclass
@@ -150,6 +157,16 @@ def _run_t7() -> T7Result:
     hash_a = header_a.block_hash()
     network.run()
 
+    log_propose(
+        runner,
+        proposer_node_id=proposer_node_id,
+        block_hash=hash_a,
+        tx_count=0,
+        height=1,
+        round_=0,
+        logical_time=network.logical_time,
+    )
+
     transaction_b = _signed_transaction(validators[2], chain_id=chain_id)
     execution_b = execute_block([transaction_b], State(), {}, execution_config)
     assert execution_b.success
@@ -254,6 +271,32 @@ def _run_t7() -> T7Result:
                 assert apply_lock(
                     states[node_id], round=0, validator_count=validator_count
                 ) == hash_a
+            # Log prevotes and locks
+            log_prevotes(
+                runner,
+                node_ids=honest_node_ids,
+                prevotes=[votes_a[node_ids.index(nid)] for nid in honest_node_ids],
+                height=1,
+                round_=0,
+                logical_time=logical_time,
+            )
+            log_locks(
+                runner,
+                node_ids=honest_node_ids,
+                states=states,
+                height=1,
+                round_=0,
+                logical_time=logical_time,
+            )
+        elif phase == PHASE_PRECOMMIT:
+            log_precommits(
+                runner,
+                node_ids=honest_node_ids,
+                precommits=[votes_a[node_ids.index(nid)] for nid in honest_node_ids],
+                height=1,
+                round_=0,
+                logical_time=logical_time,
+            )
 
     for node_id in honest_node_ids:
         finalized = try_finalize(
@@ -267,6 +310,16 @@ def _run_t7() -> T7Result:
         assert finalized.entry.block_hash == hash_a
         assert finalized.entry.block_hash != hash_b
         runner.register_ledger(node_id, ledgers[node_id])
+
+    log_finalizes(
+        runner,
+        node_ids=honest_node_ids,
+        ledgers=ledgers,
+        block_hash=hash_a,
+        height=1,
+        round_=0,
+        logical_time=runner.network.logical_time,
+    )
 
     runner.check_assertions()
     runner.shutdown()

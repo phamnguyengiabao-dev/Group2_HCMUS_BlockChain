@@ -56,8 +56,8 @@ def load_config(name: str) -> dict:
 
 @pytest.fixture(autouse=True)
 def clean_logs():
+    shutil.rmtree("logs/t4_replay_duplicate_tx", ignore_errors=True)
     yield
-    shutil.rmtree("logs", ignore_errors=True)
 
 
 # ---------------------------------------------------------------------

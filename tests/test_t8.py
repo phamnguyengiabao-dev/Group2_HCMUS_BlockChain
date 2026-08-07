@@ -19,13 +19,19 @@ from src.consensus import (
     try_finalize,
 )
 from src.crypto import hash_bytes, sign
-from src.event_log import EventType
 from src.executor import ExecutionConfig
 from src.identity import load_validator_keys
 from src.ledger import Ledger
 from src.scenario import ScenarioRunner
 from src.transaction import Transaction, encode_transaction_list
 from src.vote import Vote
+from tests.consensus_log_helper import (
+    log_finalizes,
+    log_locks,
+    log_precommits,
+    log_prevotes,
+    log_propose,
+)
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 
@@ -37,8 +43,8 @@ def _load_config(name: str) -> dict:
 
 @pytest.fixture(autouse=True)
 def clean_logs():
+    shutil.rmtree("logs/t8_determinism", ignore_errors=True)
     yield
-    shutil.rmtree("logs", ignore_errors=True)
 
 
 @dataclass
@@ -185,6 +191,16 @@ def _run_t8_once() -> T8Run:
     header = proposal.header
     block_hash = header.block_hash()
 
+    log_propose(
+        runner,
+        proposer_node_id=proposer_node_id,
+        block_hash=block_hash,
+        tx_count=1,
+        height=1,
+        round_=0,
+        logical_time=0,
+    )
+
     for receiver in node_ids:
         if receiver == proposer_node_id:
             continue
@@ -231,8 +247,25 @@ def _run_t8_once() -> T8Run:
         logical_time=runner.network.logical_time + 1,
         trace=trace,
     )
+    log_prevotes(
+        runner,
+        node_ids=node_ids,
+        prevotes=prevotes,
+        height=1,
+        round_=0,
+        logical_time=runner.network.logical_time,
+    )
     for state in states.values():
         assert apply_lock(state, round=0, validator_count=validator_count) == block_hash
+
+    log_locks(
+        runner,
+        node_ids=node_ids,
+        states=states,
+        height=1,
+        round_=0,
+        logical_time=runner.network.logical_time,
+    )
 
     precommits = []
     for validator, node_id in zip(validators, node_ids):
@@ -257,8 +290,15 @@ def _run_t8_once() -> T8Run:
         logical_time=runner.network.logical_time + 1,
         trace=trace,
     )
+    log_precommits(
+        runner,
+        node_ids=node_ids,
+        precommits=precommits,
+        height=1,
+        round_=0,
+        logical_time=runner.network.logical_time,
+    )
 
-    finalize_time = runner.network.logical_time
     for node_id in node_ids:
         finalized = try_finalize(
             states[node_id],
@@ -268,19 +308,17 @@ def _run_t8_once() -> T8Run:
             validator_count=validator_count,
         )
         assert finalized.success, finalized.reason
-        runner.event_log.write_event(
-            event_no=runner._next_event_no(),
-            logical_time=finalize_time,
-            node_id=node_id,
-            event_type=EventType.FINALIZE,
-            height=1,
-            round=0,
-            details={
-                "block_hash": block_hash.hex(),
-                "state_hash": finalized.entry.state.state_hash().hex(),
-            },
-        )
         runner.register_ledger(node_id, ledgers[node_id])
+
+    log_finalizes(
+        runner,
+        node_ids=node_ids,
+        ledgers=ledgers,
+        block_hash=block_hash,
+        height=1,
+        round_=0,
+        logical_time=runner.network.logical_time,
+    )
 
     runner.check_assertions()
     assert runner.safety_result.ok

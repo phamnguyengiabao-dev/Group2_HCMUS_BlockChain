@@ -81,8 +81,8 @@ def write_reject_events(log_path: Path, codes: list[str]) -> None:
 
 @pytest.fixture(autouse=True)
 def clean_logs():
+    shutil.rmtree("logs/t_summary_test", ignore_errors=True)
     yield
-    shutil.rmtree("logs", ignore_errors=True)
 
 
 # ================================================================

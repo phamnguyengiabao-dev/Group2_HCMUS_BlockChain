@@ -48,8 +48,8 @@ def load_config(name: str) -> dict:
 
 @pytest.fixture(autouse=True)
 def clean_logs():
+    shutil.rmtree("logs/t3_bad_signature", ignore_errors=True)
     yield
-    shutil.rmtree("logs", ignore_errors=True)
 
 
 @pytest.fixture(scope="module")

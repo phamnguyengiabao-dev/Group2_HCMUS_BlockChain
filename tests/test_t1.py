@@ -38,6 +38,13 @@ from src.executor import ExecutionConfig
 from src.identity import load_validator_keys
 from src.ledger import Ledger
 from src.scenario import ScenarioRunner
+from tests.consensus_log_helper import (
+    log_finalizes,
+    log_locks,
+    log_precommits,
+    log_prevotes,
+    log_propose,
+)
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 
@@ -49,8 +56,8 @@ def load_config(name: str) -> dict:
 
 @pytest.fixture(autouse=True)
 def clean_logs():
+    shutil.rmtree("logs/t1_normal", ignore_errors=True)
     yield
-    shutil.rmtree("logs", ignore_errors=True)
 
 
 # ---------------------------------------------------------------------
@@ -139,6 +146,16 @@ def _run_t1() -> T1Run:
         header = result.header
         block_hash = header.block_hash()
 
+        log_propose(
+            runner,
+            proposer_node_id=proposer_node_id,
+            block_hash=block_hash,
+            tx_count=0,
+            height=height,
+            round_=round_,
+            logical_time=logical_time,
+        )
+
         network.run()  # drain HEADER/BODY sends -> DELIVER events in the log
         logical_time += 1
 
@@ -159,12 +176,29 @@ def _run_t1() -> T1Run:
             )
             for validator in validators
         ]
+        log_prevotes(
+            runner,
+            node_ids=node_ids,
+            prevotes=prevotes,
+            height=height,
+            round_=round_,
+            logical_time=logical_time,
+        )
         for nid in node_ids:
             for vote in prevotes:
                 states[nid].prevotes.add(vote)
 
         for nid in node_ids:
             apply_lock(states[nid], round=round_, validator_count=validator_count)
+
+        log_locks(
+            runner,
+            node_ids=node_ids,
+            states=states,
+            height=height,
+            round_=round_,
+            logical_time=logical_time,
+        )
 
         # -- Precommit: every node broadcasts its own precommit over the
         # network, then every node observes every precommit. --
@@ -183,6 +217,15 @@ def _run_t1() -> T1Run:
                 logical_time=logical_time,
             )
             precommits.append(precommit_result.vote)
+
+        log_precommits(
+            runner,
+            node_ids=node_ids,
+            precommits=precommits,
+            height=height,
+            round_=round_,
+            logical_time=logical_time,
+        )
 
         network.run()
         logical_time += 1
@@ -204,6 +247,16 @@ def _run_t1() -> T1Run:
             assert fin.success, fin.reason
             assert fin.entry.height == height
             assert fin.entry.block_hash == block_hash
+
+        log_finalizes(
+            runner,
+            node_ids=node_ids,
+            ledgers=ledgers,
+            block_hash=block_hash,
+            height=height,
+            round_=round_,
+            logical_time=logical_time,
+        )
 
     for nid in node_ids:
         runner.register_ledger(nid, ledgers[nid])

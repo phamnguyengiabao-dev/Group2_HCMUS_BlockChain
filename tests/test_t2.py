@@ -48,6 +48,7 @@ from src.scenario import ScenarioRunner
 from src.transaction import encode_transaction_list
 from src.vote import PHASE_PRECOMMIT, PHASE_PREVOTE, Vote
 from src.vote_set import VoteOutcome
+from tests.consensus_log_helper import log_finalizes, log_locks, log_precommits, log_prevotes, log_propose
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 
@@ -59,8 +60,8 @@ def load_config(name: str) -> dict:
 
 @pytest.fixture(autouse=True)
 def clean_logs():
+    shutil.rmtree("logs/t2_duplicate_reorder", ignore_errors=True)
     yield
-    shutil.rmtree("logs", ignore_errors=True)
 
 
 # ---------------------------------------------------------------------
@@ -293,6 +294,15 @@ def _run_t2() -> T2Run:
         assert result.success, result.reason
         header = result.header
         block_hash = header.block_hash()
+        log_propose(
+            runner,
+            proposer_node_id=proposer_node_id,
+            block_hash=block_hash,
+            tx_count=0,
+            height=height,
+            round_=round_,
+            logical_time=logical_time,
+        )
 
         # The proposer already holds its own block -- no network hop needed.
         states[proposer_node_id].block_store.store_header(header)
@@ -353,6 +363,15 @@ def _run_t2() -> T2Run:
             states[nid].prevotes.add(vote)
             prevotes.append(vote)
 
+        log_prevotes(
+            runner,
+            node_ids=node_ids,
+            prevotes=prevotes,
+            height=height,
+            round_=round_,
+            logical_time=logical_time,
+        )
+
         _distribute_votes_with_faults(
             fault_injector=fault_injector,
             scheduler=scheduler,
@@ -379,6 +398,15 @@ def _run_t2() -> T2Run:
             vote_counts.setdefault((height, PHASE_PREVOTE), {})[nid] = len(distinct)
             apply_lock(states[nid], round=round_, validator_count=validator_count)
 
+        log_locks(
+            runner,
+            node_ids=node_ids,
+            states=states,
+            height=height,
+            round_=round_,
+            logical_time=logical_time,
+        )
+
         # -- Precommit: same pattern as prevote. --
         precommits = []
         for validator in validators:
@@ -404,6 +432,15 @@ def _run_t2() -> T2Run:
             )
             state.precommits.add(vote)
             precommits.append(vote)
+
+        log_precommits(
+            runner,
+            node_ids=node_ids,
+            precommits=precommits,
+            height=height,
+            round_=round_,
+            logical_time=logical_time,
+        )
 
         _distribute_votes_with_faults(
             fault_injector=fault_injector,
@@ -442,6 +479,16 @@ def _run_t2() -> T2Run:
             assert fin.success, fin.reason
             assert fin.entry.height == height
             assert fin.entry.block_hash == block_hash
+
+        log_finalizes(
+            runner,
+            node_ids=node_ids,
+            ledgers=ledgers,
+            block_hash=block_hash,
+            height=height,
+            round_=round_,
+            logical_time=logical_time,
+        )
 
     for nid in node_ids:
         runner.register_ledger(nid, ledgers[nid])
