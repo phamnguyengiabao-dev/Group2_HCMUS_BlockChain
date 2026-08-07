@@ -1,5 +1,6 @@
 {
   "scenario_id": "t5_drop_delay",
+  "chain_id": "lab01-testnet",
   "seed": 5005,
   "num_validators": 8,
   "f": 2,
@@ -7,10 +8,20 @@
   "byzantine_nodes": [],
   "transactions": [],
   "topology": "full_mesh",
+  "stabilization_time": 20,
+  "pre_synchrony_delivery_cap_per_receiver": 4,
   "faults": {
     "drop_probability": 0.1,
     "delay_probability": 0.4,
     "max_delay": 5,
+    "duplicate_probability": 0.0,
+    "max_duplicates": 0,
+    "reorder_probability": 0.0
+  },
+  "post_synchrony_faults": {
+    "drop_probability": 0.0,
+    "delay_probability": 0.0,
+    "max_delay": 0,
     "duplicate_probability": 0.0,
     "max_duplicates": 0,
     "reorder_probability": 0.0
