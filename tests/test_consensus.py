@@ -19,7 +19,7 @@ from src.ledger import Ledger
 from src.network import Network
 from src.scheduler import Scheduler
 from src.transaction import Transaction, encode_transaction_list
-from src.vote import PHASE_PREVOTE
+from src.vote import PHASE_PREVOTE, PHASE_PRECOMMIT, Vote
 
 CHAIN_ID = "test-chain"
 
@@ -726,3 +726,530 @@ def test_make_prevote_nil_when_locked(validators):
     )
 
     assert stored == vote
+
+# ============================================================
+# T4-05  Lock logic (apply_lock)
+# ============================================================
+
+from src.consensus import apply_lock
+
+
+def _add_prevotes_for_hash(state, validators, block_hash, round_, count):
+    """Helper: add `count` prevotes for block_hash at (height, round_)."""
+    for v in validators[:count]:
+        vote = Vote.create_signed(
+            chain_id=CHAIN_ID,
+            height=state.height,
+            round=round_,
+            phase=PHASE_PREVOTE,
+            block_hash_or_nil=block_hash,
+            validator_pubkey=v.public_key,
+            validator_privkey=v.private_key,
+        )
+        state.prevotes.add(vote)
+
+
+def _add_precommits_for_hash(state, validators, block_hash, round_, count):
+    """Helper: add `count` precommits for block_hash at (height, round_)."""
+    for v in validators[:count]:
+        vote = Vote.create_signed(
+            chain_id=CHAIN_ID,
+            height=state.height,
+            round=round_,
+            phase=PHASE_PRECOMMIT,
+            block_hash_or_nil=block_hash,
+            validator_pubkey=v.public_key,
+            validator_privkey=v.private_key,
+        )
+        state.precommits.add(vote)
+
+
+def test_apply_lock_sets_lock_when_quorum(validators):
+    """Quorum prevotes (5/8) → lock and valid_block_hash updated."""
+    state = ConsensusState(height=1)
+    header = make_header()
+    state.block_store.store_header(header)
+    block_hash = header.block_hash()
+
+    _add_prevotes_for_hash(state, validators, block_hash, round_=0, count=5)
+
+    result = apply_lock(state, round=0, validator_count=8)
+
+    assert result == block_hash
+    assert state.locked_block_hash == block_hash
+    assert state.locked_round == 0
+    assert state.valid_block_hash == block_hash
+
+
+def test_apply_lock_no_quorum_returns_none(validators):
+    """Insufficient prevotes (4/8) → no lock."""
+    state = ConsensusState(height=1)
+    header = make_header()
+    state.block_store.store_header(header)
+    block_hash = header.block_hash()
+
+    _add_prevotes_for_hash(state, validators, block_hash, round_=0, count=4)
+
+    result = apply_lock(state, round=0, validator_count=8)
+
+    assert result is None
+    assert state.locked_block_hash is None
+
+
+def test_apply_lock_skips_unknown_block(validators):
+    """Quorum exists but block not in block_store → skip, return None."""
+    state = ConsensusState(height=1)
+    unknown_hash = b"\xde\xad" * 16  # 32 bytes, not in block_store
+
+    _add_prevotes_for_hash(state, validators, unknown_hash, round_=0, count=5)
+
+    result = apply_lock(state, round=0, validator_count=8)
+
+    assert result is None
+    assert state.locked_block_hash is None
+
+
+def test_apply_lock_exact_quorum_threshold(validators):
+    """Exactly 2f+1 = 5 prevotes with n=8, f=2 is just enough."""
+    state = ConsensusState(height=1)
+    header = make_header()
+    state.block_store.store_header(header)
+    block_hash = header.block_hash()
+
+    # Exactly 5 prevotes (threshold for n=8, f=2)
+    _add_prevotes_for_hash(state, validators, block_hash, round_=0, count=5)
+
+    result = apply_lock(state, round=0, validator_count=8)
+    assert result == block_hash
+
+
+# ============================================================
+# T4-06  Precommit logic (make_precommit)
+# ============================================================
+
+from src.consensus import make_precommit, PrecommitResult
+
+
+def test_make_precommit_block_when_locked_with_quorum(validators):
+    """Locked + quorum prevotes → precommit the block."""
+    state = ConsensusState(height=1)
+    header = make_header()
+    state.block_store.store_header(header)
+    block_hash = header.block_hash()
+
+    state.lock(block_hash, 0)
+    _add_prevotes_for_hash(state, validators, block_hash, round_=0, count=5)
+
+    network = build_network("precommit_block")
+    node_ids = node_ids_for(validators)
+    peers = node_ids[1:4]
+
+    result = make_precommit(
+        state,
+        chain_id=CHAIN_ID,
+        self_identity=validators[0],
+        validator_count=8,
+        network=network,
+        validator_node_ids=node_ids,
+        peers=peers,
+        logical_time=10,
+    )
+
+    assert result.block_hash_or_nil == block_hash
+    assert result.vote.phase == PHASE_PRECOMMIT
+    assert result.vote.block_hash_or_nil == block_hash
+    # vote stored in precommits
+    stored = state.precommits.get(1, 0, PHASE_PRECOMMIT, validators[0].public_key)
+    assert stored is not None
+    assert stored.block_hash_or_nil == block_hash
+    # broadcast to all peers
+    delivered = network.run()
+    assert len(delivered) == len(peers)
+
+
+def test_make_precommit_nil_when_no_quorum(validators):
+    """No prevote quorum → precommit NIL."""
+    state = ConsensusState(height=1)
+    header = make_header()
+    state.block_store.store_header(header)
+    block_hash = header.block_hash()
+
+    # Only 3 prevotes, below quorum of 5
+    _add_prevotes_for_hash(state, validators, block_hash, round_=0, count=3)
+
+    network = build_network("precommit_nil")
+    node_ids = node_ids_for(validators)
+    peers = node_ids[1:3]
+
+    result = make_precommit(
+        state,
+        chain_id=CHAIN_ID,
+        self_identity=validators[0],
+        validator_count=8,
+        network=network,
+        validator_node_ids=node_ids,
+        peers=peers,
+        logical_time=20,
+    )
+
+    assert result.block_hash_or_nil is None
+    assert result.vote.block_hash_or_nil is None
+    delivered = network.run()
+    assert len(delivered) == len(peers)
+
+
+def test_make_precommit_any_block_with_quorum(validators):
+    """No lock but quorum prevotes for a block → precommit that block."""
+    state = ConsensusState(height=1)
+    block_hash = b"\xcc" * 32
+
+    # Build a fake header for this hash so apply_lock could work,
+    # but here we test make_precommit directly (no lock)
+    _add_prevotes_for_hash(state, validators, block_hash, round_=0, count=5)
+
+    network = build_network("precommit_any")
+    node_ids = node_ids_for(validators)
+    peers = node_ids[1:2]
+
+    result = make_precommit(
+        state,
+        chain_id=CHAIN_ID,
+        self_identity=validators[1],
+        validator_count=8,
+        network=network,
+        validator_node_ids=node_ids,
+        peers=peers,
+        logical_time=5,
+    )
+
+    assert result.block_hash_or_nil == block_hash
+
+
+# ============================================================
+# T4-07  Finalization pipeline (try_finalize)
+# ============================================================
+
+from src.consensus import try_finalize, FinalizationResult
+from src.crypto import sign
+from src.state import State
+from src.executor import ExecutionConfig
+
+
+def _make_valid_block(chain_id, height, round_, validators, parent_hash=None):
+    """Build a valid BlockHeader + empty tx list that passes validate_block_body."""
+    from src.block import compute_tx_root
+    from src.state import State
+
+    if parent_hash is None:
+        parent_hash = b"\x00" * 32
+
+    # Empty block: tx_root = hash of count=0, state_hash = empty state hash
+    tx_root = compute_tx_root([])
+    state_hash = State().state_hash()
+
+    proposer_idx = (height + round_) % len(validators)
+    proposer = validators[proposer_idx]
+
+    header = BlockHeader.create_signed(
+        chain_id=chain_id,
+        height=height,
+        round=round_,
+        parent_hash=parent_hash,
+        tx_root=tx_root,
+        state_hash=state_hash,
+        proposer_pubkey=proposer.public_key,
+        proposer_privkey=proposer.private_key,
+    )
+    return header, []  # (header, transactions)
+
+
+def test_try_finalize_success(validators):
+    """Quorum precommits + valid header+body → finalize and reset height."""
+    state = ConsensusState(height=1)
+    header, txs = _make_valid_block(CHAIN_ID, 1, 0, validators)
+    block_hash = header.block_hash()
+
+    state.block_store.store_header(header)
+    state.block_store.store_body(block_hash, txs)
+
+    _add_precommits_for_hash(state, validators, block_hash, round_=0, count=5)
+
+    ledger = Ledger(chain_id=CHAIN_ID)
+    exec_config = ExecutionConfig(chain_id=CHAIN_ID, max_key_size=256, max_value_size=4096)
+
+    result = try_finalize(
+        state,
+        ledger=ledger,
+        chain_id=CHAIN_ID,
+        exec_config=exec_config,
+        validator_count=8,
+    )
+
+    assert result.success is True
+    assert result.entry is not None
+    assert result.entry.height == 1
+    assert result.entry.block_hash == block_hash
+    # ConsensusState reset to height 2
+    assert state.height == 2
+    assert state.round == 0
+    assert state.locked_block_hash is None
+    # Ledger has the finalized entry
+    assert ledger.is_finalized(1)
+
+
+def test_try_finalize_no_quorum(validators):
+    """Insufficient precommits → no finalization."""
+    state = ConsensusState(height=1)
+    header, txs = _make_valid_block(CHAIN_ID, 1, 0, validators)
+    block_hash = header.block_hash()
+
+    state.block_store.store_header(header)
+    state.block_store.store_body(block_hash, txs)
+    _add_precommits_for_hash(state, validators, block_hash, round_=0, count=4)
+
+    ledger = Ledger(chain_id=CHAIN_ID)
+    exec_config = ExecutionConfig(chain_id=CHAIN_ID, max_key_size=256, max_value_size=4096)
+
+    result = try_finalize(
+        state,
+        ledger=ledger,
+        chain_id=CHAIN_ID,
+        exec_config=exec_config,
+        validator_count=8,
+    )
+
+    assert result.success is False
+    assert result.reason == "NO_PRECOMMIT_QUORUM"
+    assert state.height == 1  # unchanged
+
+
+def test_try_finalize_no_body(validators):
+    """Quorum precommits but body not stored → fail with BODY_NOT_FOUND."""
+    state = ConsensusState(height=1)
+    header, _ = _make_valid_block(CHAIN_ID, 1, 0, validators)
+    block_hash = header.block_hash()
+
+    state.block_store.store_header(header)
+    # body NOT stored
+    _add_precommits_for_hash(state, validators, block_hash, round_=0, count=5)
+
+    ledger = Ledger(chain_id=CHAIN_ID)
+    exec_config = ExecutionConfig(chain_id=CHAIN_ID, max_key_size=256, max_value_size=4096)
+
+    result = try_finalize(
+        state,
+        ledger=ledger,
+        chain_id=CHAIN_ID,
+        exec_config=exec_config,
+        validator_count=8,
+    )
+
+    assert result.success is False
+    assert result.reason == "BODY_NOT_FOUND"
+
+
+def test_try_finalize_sequential_heights(validators):
+    """Finalize height 1 then height 2 — parent_hash chain is correct."""
+    ledger = Ledger(chain_id=CHAIN_ID)
+    exec_config = ExecutionConfig(chain_id=CHAIN_ID, max_key_size=256, max_value_size=4096)
+
+    # Height 1
+    state = ConsensusState(height=1)
+    h1, txs1 = _make_valid_block(CHAIN_ID, 1, 0, validators)
+    bh1 = h1.block_hash()
+    state.block_store.store_header(h1)
+    state.block_store.store_body(bh1, txs1)
+    _add_precommits_for_hash(state, validators, bh1, round_=0, count=5)
+
+    r1 = try_finalize(state, ledger=ledger, chain_id=CHAIN_ID, exec_config=exec_config, validator_count=8)
+    assert r1.success
+    assert state.height == 2  # reset to 2
+
+    # Height 2 — parent_hash must match bh1
+    h2, txs2 = _make_valid_block(CHAIN_ID, 2, 0, validators, parent_hash=bh1)
+    bh2 = h2.block_hash()
+    state.block_store.store_header(h2)
+    state.block_store.store_body(bh2, txs2)
+    _add_precommits_for_hash(state, validators, bh2, round_=0, count=5)
+
+    r2 = try_finalize(state, ledger=ledger, chain_id=CHAIN_ID, exec_config=exec_config, validator_count=8)
+    assert r2.success
+    assert state.height == 3
+    assert ledger.is_finalized(2)
+
+
+# ============================================================
+# T4-08  Round change (do_round_change)
+# ============================================================
+
+from src.consensus import do_round_change, RoundChangeResult, schedule_precommit_timeout, TIMEOUT_PRECOMMIT_PAYLOAD
+
+
+def test_do_round_change_increments_round(validators):
+    """Round change advances round and preserves lock."""
+    state = ConsensusState(height=1)
+    header = make_header()
+    state.block_store.store_header(header)
+    block_hash = header.block_hash()
+    state.lock(block_hash, 0)
+
+    network = build_network("round_change")
+    node_ids = node_ids_for(validators)
+
+    result = do_round_change(
+        state,
+        network=network,
+        self_identity=validators[0],
+        validator_node_ids=node_ids,
+        peers=node_ids[1:3],
+        chain_id=CHAIN_ID,
+        logical_time=50,
+        precommit_timeout=5,
+    )
+
+    assert result.new_round == 1
+    assert state.round == 1
+    # Lock preserved
+    assert result.kept_locked_block_hash == block_hash
+    assert result.kept_locked_round == 0
+    assert state.locked_block_hash == block_hash
+
+
+def test_do_round_change_resets_votes(validators):
+    """Round change clears vote sets."""
+    state = ConsensusState(height=1)
+    block_hash = b"\xab" * 32
+    _add_prevotes_for_hash(state, validators, block_hash, round_=0, count=3)
+
+    prev_prevotes = state.prevotes
+    network = build_network("round_change_votes")
+    node_ids = node_ids_for(validators)
+
+    do_round_change(
+        state,
+        network=network,
+        self_identity=validators[0],
+        validator_node_ids=node_ids,
+        peers=[],
+        chain_id=CHAIN_ID,
+        logical_time=30,
+        precommit_timeout=5,
+    )
+
+    assert state.round == 1
+    assert len(state.prevotes) == 0
+    assert state.prevotes is not prev_prevotes
+
+
+def test_do_round_change_multiple_rounds(validators):
+    """Multiple round changes accumulate correctly."""
+    state = ConsensusState(height=1)
+    network = build_network("multi_round_change")
+    node_ids = node_ids_for(validators)
+
+    for expected_round in range(1, 4):
+        result = do_round_change(
+            state,
+            network=network,
+            self_identity=validators[0],
+            validator_node_ids=node_ids,
+            peers=[],
+            chain_id=CHAIN_ID,
+            logical_time=expected_round * 10,
+            precommit_timeout=5,
+        )
+        assert result.new_round == expected_round
+        assert state.round == expected_round
+
+
+def test_schedule_precommit_timeout_sends_self_envelope(validators):
+    """schedule_precommit_timeout enqueues TIMEOUT:PRECOMMIT at correct time."""
+    state = ConsensusState(height=1)
+    network = build_network("precommit_timeout_schedule")
+    node_ids = node_ids_for(validators)
+
+    schedule_precommit_timeout(
+        state,
+        network=network,
+        self_identity=validators[0],
+        validator_node_ids=node_ids,
+        current_logical_time=20,
+        precommit_timeout=8,
+    )
+
+    delivered = network.run()
+    assert delivered == [TIMEOUT_PRECOMMIT_PAYLOAD]
+
+
+# ============================================================
+# T4-09  VoteSentTracker — "send at most one vote" guard
+# ============================================================
+
+from src.consensus import VoteSentTracker
+
+
+def test_vote_sent_tracker_initial_can_vote():
+    tracker = VoteSentTracker()
+    assert tracker.can_vote(1, 0, PHASE_PREVOTE) is True
+    assert tracker.has_voted(1, 0, PHASE_PREVOTE) is False
+
+
+def test_vote_sent_tracker_blocks_second_vote():
+    tracker = VoteSentTracker()
+    tracker.record_vote(1, 0, PHASE_PREVOTE)
+
+    assert tracker.can_vote(1, 0, PHASE_PREVOTE) is False
+    assert tracker.has_voted(1, 0, PHASE_PREVOTE) is True
+
+
+def test_vote_sent_tracker_different_phases_independent():
+    tracker = VoteSentTracker()
+    tracker.record_vote(1, 0, PHASE_PREVOTE)
+
+    # Same height+round but different phase is still open
+    assert tracker.can_vote(1, 0, PHASE_PRECOMMIT) is True
+
+
+def test_vote_sent_tracker_different_rounds_independent():
+    tracker = VoteSentTracker()
+    tracker.record_vote(1, 0, PHASE_PREVOTE)
+
+    # Round 1 is still open
+    assert tracker.can_vote(1, 1, PHASE_PREVOTE) is True
+
+
+def test_vote_sent_tracker_record_idempotent():
+    tracker = VoteSentTracker()
+    tracker.record_vote(1, 0, PHASE_PREVOTE)
+    tracker.record_vote(1, 0, PHASE_PREVOTE)  # second call is no-op
+    assert not tracker.can_vote(1, 0, PHASE_PREVOTE)
+
+
+def test_vote_sent_tracker_reset_height():
+    tracker = VoteSentTracker()
+    tracker.record_vote(1, 0, PHASE_PREVOTE)
+    tracker.record_vote(1, 0, PHASE_PRECOMMIT)
+    tracker.record_vote(2, 0, PHASE_PREVOTE)
+
+    tracker.reset_height(2)  # discard height < 2
+
+    assert tracker.can_vote(1, 0, PHASE_PREVOTE) is True   # discarded
+    assert tracker.can_vote(1, 0, PHASE_PRECOMMIT) is True  # discarded
+    assert tracker.can_vote(2, 0, PHASE_PREVOTE) is False   # kept
+
+
+def test_vote_sent_tracker_guards_full_round(validators):
+    """Simulate a node sending prevote then attempting a second prevote."""
+    tracker = VoteSentTracker()
+
+    # First prevote is allowed
+    assert tracker.can_vote(5, 2, PHASE_PREVOTE) is True
+    tracker.record_vote(5, 2, PHASE_PREVOTE)
+
+    # Second prevote for same slot is blocked
+    assert tracker.can_vote(5, 2, PHASE_PREVOTE) is False
+
+    # Precommit for same (height, round) is still allowed
+    assert tracker.can_vote(5, 2, PHASE_PRECOMMIT) is True
+    tracker.record_vote(5, 2, PHASE_PRECOMMIT)
+    assert tracker.can_vote(5, 2, PHASE_PRECOMMIT) is False

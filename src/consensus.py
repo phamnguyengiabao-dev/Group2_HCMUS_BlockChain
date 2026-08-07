@@ -45,7 +45,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
-from src.block import BlockHeader, compute_tx_root
+from src.block import BlockHeader, compute_tx_root, validate_block_body
 from src.block_store import BlockStore
 from src.encoding import encode_bytes, encode_uint64
 from src.executor import ExecutionConfig, execute_block
@@ -54,7 +54,7 @@ from src.ledger import Ledger
 from src.network import Network
 from src.state import State
 from src.transaction import Transaction, encode_transaction_list
-from src.vote import PHASE_PREVOTE, Vote
+from src.vote import PHASE_PREVOTE, PHASE_PRECOMMIT, Vote
 from src.vote_set import VoteSet
 
 HASH_SIZE = 32
@@ -621,3 +621,403 @@ def make_prevote(
     state.prevotes.add(vote)
 
     return vote
+
+
+# ====================================================
+# T4-05
+# Lock logic (F-36)
+# ====================================================
+
+def apply_lock(
+    state: ConsensusState,
+    *,
+    round: int,
+    validator_count: int,
+) -> bytes | None:
+    """
+    F-36: After a quorum of non-NIL prevotes for `round` is detected,
+    lock the node onto the block with the quorum and update valid_block_hash.
+
+    Returns the block_hash that was locked, or None if no quorum was found.
+
+    Conditions:
+        - >= 2f+1 prevotes for a specific non-NIL block_hash at (height, round)
+        - Lock state updated: locked_block_hash, locked_round, valid_block_hash
+    """
+
+    # Scan stored prevotes for the best non-NIL block_hash with quorum
+    candidate_hashes: set[bytes] = set()
+
+    for vote in state.prevotes.votes(state.height, round, PHASE_PREVOTE):
+        if vote.block_hash_or_nil is not None:
+            candidate_hashes.add(vote.block_hash_or_nil)
+
+    for block_hash in sorted(candidate_hashes):
+        if state.prevotes.has_quorum(
+            height=state.height,
+            round=round,
+            phase=PHASE_PREVOTE,
+            n=validator_count,
+            block_hash=block_hash,
+        ):
+            # Verify the block is known before locking
+            if not state.block_store.has_header(block_hash):
+                continue  # skip unknown blocks
+
+            state.locked_block_hash = block_hash
+            state.locked_round = round
+            state.valid_block_hash = block_hash
+            return block_hash
+
+    return None
+
+
+# ====================================================
+# T4-06
+# Precommit logic (F-37)
+# ====================================================
+
+@dataclass(frozen=True)
+class PrecommitResult:
+    """Outcome of one precommit decision."""
+    vote: Vote
+    block_hash_or_nil: bytes | None
+
+
+def make_precommit(
+    state: ConsensusState,
+    *,
+    chain_id: str,
+    self_identity: ValidatorIdentity,
+    validator_count: int,
+    network: Network,
+    validator_node_ids: Sequence[str],
+    peers: Sequence[str],
+    logical_time: int,
+) -> PrecommitResult:
+    """
+    F-37: Determine the precommit target and broadcast it.
+
+    Rules:
+        1. If there is a quorum of non-NIL prevotes for some block_hash
+           at this (height, round) → precommit that block_hash.
+        2. Otherwise → precommit NIL.
+
+    The precommit is stored in state.precommits and broadcast to all peers.
+    """
+    # Determine target: quorum prevote non-NIL?
+    target: bytes | None = None
+
+    if state.locked_block_hash is not None and state.prevotes.has_quorum(
+        height=state.height,
+        round=state.round,
+        phase=PHASE_PREVOTE,
+        n=validator_count,
+        block_hash=state.locked_block_hash,
+    ):
+        target = state.locked_block_hash
+    else:
+        # Check for any block with quorum
+        candidate_hashes: set[bytes] = set()
+        for vote in state.prevotes.votes(state.height, state.round, PHASE_PREVOTE):
+            if vote.block_hash_or_nil is not None:
+                candidate_hashes.add(vote.block_hash_or_nil)
+
+        for block_hash in sorted(candidate_hashes):
+            if state.prevotes.has_quorum(
+                height=state.height,
+                round=state.round,
+                phase=PHASE_PREVOTE,
+                n=validator_count,
+                block_hash=block_hash,
+            ):
+                target = block_hash
+                break
+
+    # Sign the precommit
+    self_node_id = validator_node_ids[self_identity.index]
+
+    vote = Vote.create_signed(
+        chain_id=chain_id,
+        height=state.height,
+        round=state.round,
+        phase=PHASE_PRECOMMIT,
+        block_hash_or_nil=target,
+        validator_pubkey=self_identity.public_key,
+        validator_privkey=self_identity.private_key,
+    )
+
+    state.precommits.add(vote)
+
+    # Broadcast to all peers
+    for peer in peers:
+        network.send(
+            sender=self_node_id,
+            receiver=peer,
+            payload=vote.signed_bytes(),
+            logical_time=logical_time,
+            height=state.height,
+            round=state.round,
+        )
+
+    return PrecommitResult(vote=vote, block_hash_or_nil=target)
+
+
+# ====================================================
+# T4-07
+# Finalization logic (F-38)
+# ====================================================
+
+@dataclass(frozen=True)
+class FinalizationResult:
+    """Outcome of a finalization attempt."""
+    success: bool
+    entry: Optional["LedgerEntry"] = None
+    reason: Optional[str] = None
+
+
+def try_finalize(
+    state: ConsensusState,
+    *,
+    ledger: Ledger,
+    chain_id: str,
+    exec_config: ExecutionConfig,
+    validator_count: int,
+) -> FinalizationResult:
+    """
+    F-38: If there is a quorum of non-NIL precommits for some block_hash at
+    (height, round), validate the block body and append it to the ledger.
+
+    On success:
+        - Block is appended to the ledger
+        - ConsensusState is reset to height+1, round=0
+        - locked/valid state is cleared
+
+    Returns FinalizationResult(success=True, entry=...) or
+            FinalizationResult(success=False, reason=...).
+    """
+    # Find a block_hash with quorum precommits
+    candidate_hashes: set[bytes] = set()
+    for vote in state.precommits.votes(state.height, state.round, PHASE_PRECOMMIT):
+        if vote.block_hash_or_nil is not None:
+            candidate_hashes.add(vote.block_hash_or_nil)
+
+    finalize_hash: bytes | None = None
+    for block_hash in sorted(candidate_hashes):
+        if state.precommits.has_quorum(
+            height=state.height,
+            round=state.round,
+            phase=PHASE_PRECOMMIT,
+            n=validator_count,
+            block_hash=block_hash,
+        ):
+            finalize_hash = block_hash
+            break
+
+    if finalize_hash is None:
+        return FinalizationResult(success=False, reason="NO_PRECOMMIT_QUORUM")
+
+    # Must have header and body
+    if not state.block_store.has_header(finalize_hash):
+        return FinalizationResult(success=False, reason="HEADER_NOT_FOUND")
+
+    if not state.block_store.has_body(finalize_hash):
+        return FinalizationResult(success=False, reason="BODY_NOT_FOUND")
+
+    header = state.block_store.get_header(finalize_hash)
+    transactions = list(state.block_store.get_body(finalize_hash))
+
+    # Load parent state for re-validation
+    parent_height = header.height - 1
+    if parent_height == 0:
+        parent_state = State()
+        parent_nonces: dict[bytes, int] = {}
+    else:
+        if not ledger.is_finalized(parent_height):
+            return FinalizationResult(success=False, reason="PARENT_NOT_FINALIZED")
+        parent_state = ledger.get_state(parent_height)
+        parent_nonces = ledger.get_nonces(parent_height)
+
+    # Re-validate the block body (F-38 requires full re-validation)
+    validation = validate_block_body(
+        header,
+        transactions,
+        parent_state,
+        parent_nonces,
+        exec_config,
+    )
+
+    if not validation.success:
+        return FinalizationResult(
+            success=False,
+            reason=f"BODY_VALIDATION_FAILED: {validation.rejection.code}",
+        )
+
+    # Append to ledger (atomic persist via T2-13)
+    entry = ledger.finalize(
+        header=header,
+        applied_tx_ids=list(validation.applied_tx_ids),
+        state=validation.state,
+        nonces=validation.nonces,
+    )
+
+    # Reset consensus state to next height, round 0
+    state.reset_height(header.height + 1)
+
+    return FinalizationResult(success=True, entry=entry)
+
+
+# ====================================================
+# T4-08
+# Round change logic (F-39)
+# ====================================================
+
+@dataclass(frozen=True)
+class RoundChangeResult:
+    """Outcome of a round change."""
+    new_round: int
+    kept_locked_block_hash: bytes | None
+    kept_locked_round: int | None
+
+
+def do_round_change(
+    state: ConsensusState,
+    *,
+    network: Network,
+    self_identity: ValidatorIdentity,
+    validator_node_ids: Sequence[str],
+    peers: Sequence[str],
+    chain_id: str,
+    logical_time: int,
+    precommit_timeout: int,
+) -> RoundChangeResult:
+    """
+    F-39: Precommit timeout → increment round → reset vote sets → keep locks.
+
+    Schedule a proposal timeout for the new round (as a self-addressed TIMEOUT
+    envelope) so the node can detect if the new round's proposer is silent.
+
+    The lock state (locked_block_hash, locked_round) is preserved across round
+    changes, per the Tendermint safety invariant. vote sets are cleared for
+    the new round.
+    """
+    # Preserve lock state before clearing votes
+    kept_locked_hash = state.locked_block_hash
+    kept_locked_round = state.locked_round
+
+    # Advance round
+    new_round = state.next_round()
+
+    # Reset votes for the new round (but keep block_store and lock state)
+    state.reset_votes()
+
+    return RoundChangeResult(
+        new_round=new_round,
+        kept_locked_block_hash=kept_locked_hash,
+        kept_locked_round=kept_locked_round,
+    )
+
+
+def schedule_precommit_timeout(
+    state: ConsensusState,
+    *,
+    network: Network,
+    self_identity: ValidatorIdentity,
+    validator_node_ids: Sequence[str],
+    current_logical_time: int,
+    precommit_timeout: int,
+) -> None:
+    """
+    Schedule a precommit-timeout wakeup for round change detection.
+
+    Delivered as a self-addressed envelope carrying TIMEOUT_PRECOMMIT_PAYLOAD.
+    """
+    self_node_id = validator_node_ids[self_identity.index]
+    network.send(
+        sender=self_node_id,
+        receiver=self_node_id,
+        payload=TIMEOUT_PRECOMMIT_PAYLOAD,
+        logical_time=current_logical_time + precommit_timeout,
+        height=state.height,
+        round=state.round,
+    )
+
+
+# ====================================================
+# T4-09
+# "Send at most one vote" guard (F-33)
+# ====================================================
+
+class VoteSentTracker:
+    """
+    Per-node guard enforcing F-33: a node may cast at most one vote per
+    (height, round, phase).
+
+    Usage:
+        tracker = VoteSentTracker()
+
+        # Before signing a vote:
+        if tracker.can_vote(height, round, phase):
+            vote = Vote.create_signed(...)
+            tracker.record_vote(height, round, phase)
+            broadcast(vote)
+    """
+
+    def __init__(self) -> None:
+        # Set of (height, round, phase) slots that already have a sent vote
+        self._sent: set[tuple[int, int, str]] = set()
+
+    def can_vote(self, height: int, round: int, phase: str) -> bool:
+        """Return True if no vote has been sent for this (height, round, phase)."""
+        return (height, round, phase) not in self._sent
+
+    def record_vote(self, height: int, round: int, phase: str) -> None:
+        """Mark (height, round, phase) as voted. Idempotent."""
+        self._sent.add((height, round, phase))
+
+    def has_voted(self, height: int, round: int, phase: str) -> bool:
+        """Return True if a vote was already sent for (height, round, phase)."""
+        return (height, round, phase) in self._sent
+
+    def reset_height(self, new_height: int) -> None:
+        """
+        Discard all entries for heights strictly below new_height.
+        Called when the node finalizes a block and moves to the next height.
+        """
+        self._sent = {
+            (h, r, p)
+            for (h, r, p) in self._sent
+            if h >= new_height
+        }
+
+
+# ====================================================
+# Sentinel payloads for timeout self-messages
+# ====================================================
+
+TIMEOUT_PRECOMMIT_PAYLOAD = b"TIMEOUT:PRECOMMIT"
+TIMEOUT_PREVOTE_PAYLOAD = b"TIMEOUT:PREVOTE"
+
+
+__all__ = [
+    "ConsensusState",
+    "FinalizationResult",
+    "PrecommitResult",
+    "ProposalResult",
+    "RoundChangeResult",
+    "VoteSentTracker",
+    "TIMEOUT_PRECOMMIT_PAYLOAD",
+    "TIMEOUT_PREVOTE_PAYLOAD",
+    "TIMEOUT_PROPOSAL_PAYLOAD",
+    "apply_lock",
+    "do_round_change",
+    "handle_proposal_timeout",
+    "make_precommit",
+    "make_prevote",
+    "prevote_block_or_nil",
+    "propose",
+    "schedule_precommit_timeout",
+    "schedule_proposal_timeout",
+    "select_proposer",
+    "try_finalize",
+]

@@ -287,3 +287,163 @@ class ScenarioRunner:
                 else None
             ),
         }
+
+
+# ================================================================
+# T4-11  Crash simulation
+# T4-12  Restart simulation
+# ================================================================
+
+@dataclass
+class NodeCrashState:
+    """
+    Tracks whether a node has crashed and what snapshot it had at crash time.
+
+    Fields:
+        node_id          Node identifier.
+        crashed_at       Logical time the crash was triggered.
+        restarted_at     Logical time of restart (None if not yet restarted).
+        snapshot_path    Path to the persisted ledger snapshot used for recovery.
+    """
+
+    node_id: str
+    crashed_at: int
+    restarted_at: int | None = None
+    snapshot_path: str | None = None
+
+
+def simulate_crash(
+    *,
+    node_id: str,
+    logical_time: int,
+    event_log: EventLog,
+    event_no: int,
+    in_memory_caches: dict[str, Any] | None = None,
+    snapshot_path: str | None = None,
+) -> NodeCrashState:
+    """
+    T4-11: Simulate a node crash.
+
+    Actions performed:
+        1. Clear the node's in-memory cache (if supplied).
+        2. Write a canonical CRASH event to the event log.
+        3. Return a NodeCrashState capturing the crash metadata.
+
+    The persisted ledger snapshot (if any) is intentionally preserved —
+    crash recovery (T4-12) loads from it.
+
+    Args:
+        node_id:          The node that crashes.
+        logical_time:     Logical time of the crash.
+        event_log:        Canonical event log.
+        event_no:         Monotonic event number to use for the CRASH event.
+        in_memory_caches: Optional dict whose value for `node_id` is cleared.
+                          Represents any in-memory state (pending blocks,
+                          pending votes, consensus state, etc.).
+        snapshot_path:    Path to the node's persisted ledger snapshot file,
+                          kept intact so restart can load it.
+
+    Returns:
+        NodeCrashState describing the crash.
+    """
+    # 1. Clear in-memory state
+    if in_memory_caches is not None and node_id in in_memory_caches:
+        cache = in_memory_caches[node_id]
+        if hasattr(cache, "clear") and callable(cache.clear):
+            cache.clear()
+        else:
+            in_memory_caches[node_id] = None
+
+    # 2. Log CRASH event
+    event_log.write_event(
+        event_no=event_no,
+        logical_time=logical_time,
+        node_id=node_id,
+        event_type=EventType.CRASH,
+        height=0,
+        round=0,
+        details={
+            "node_id": node_id,
+            "snapshot_preserved": snapshot_path is not None,
+        },
+    )
+
+    return NodeCrashState(
+        node_id=node_id,
+        crashed_at=logical_time,
+        snapshot_path=snapshot_path,
+    )
+
+
+def simulate_restart(
+    *,
+    crash_state: NodeCrashState,
+    logical_time: int,
+    event_log: EventLog,
+    event_no: int,
+    chain_id: str,
+) -> "tuple[NodeCrashState, Ledger]":
+    """
+    T4-12: Simulate a node restart after a crash.
+
+    Actions performed:
+        1. Load the finalized ledger snapshot from disk (F-53).
+           Unfinalized proposals and votes are discarded — they are not
+           in the snapshot and are not reconstructed here.
+        2. Write a canonical RESTART event to the event log.
+        3. Return an updated NodeCrashState and the recovered Ledger.
+
+    The caller is responsible for rebuilding consensus state by re-processing
+    messages received from peers after the restart (network gossip).
+
+    Args:
+        crash_state:   The NodeCrashState returned by simulate_crash().
+        logical_time:  Logical time of the restart.
+        event_log:     Canonical event log.
+        event_no:      Monotonic event number to use for the RESTART event.
+        chain_id:      Chain identifier for the recovered Ledger.
+
+    Returns:
+        (updated_crash_state, recovered_ledger)
+
+    Raises:
+        ValueError: If the snapshot is corrupt (propagated from Ledger.load_snapshot).
+    """
+    from src.ledger import Ledger
+
+    snapshot_path = crash_state.snapshot_path
+
+    # 1. Load from snapshot (or start empty if no snapshot exists yet)
+    if snapshot_path is not None:
+        recovered_ledger = Ledger.load_snapshot(
+            chain_id=chain_id,
+            storage_path=snapshot_path,
+        )
+    else:
+        recovered_ledger = Ledger(chain_id=chain_id)
+
+    finalized_height = recovered_ledger.finalized_height
+
+    # 2. Log RESTART event
+    event_log.write_event(
+        event_no=event_no,
+        logical_time=logical_time,
+        node_id=crash_state.node_id,
+        event_type=EventType.RESTART,
+        height=finalized_height,
+        round=0,
+        details={
+            "node_id": crash_state.node_id,
+            "recovered_height": finalized_height,
+            "snapshot_path": str(snapshot_path) if snapshot_path else None,
+        },
+    )
+
+    updated_state = NodeCrashState(
+        node_id=crash_state.node_id,
+        crashed_at=crash_state.crashed_at,
+        restarted_at=logical_time,
+        snapshot_path=snapshot_path,
+    )
+
+    return updated_state, recovered_ledger

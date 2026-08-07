@@ -1,0 +1,23 @@
+{
+  "scenario_id": "t3_bad_signature",
+  "seed": 3003,
+  "num_validators": 8,
+  "f": 2,
+  "max_height": 0,
+  "byzantine_nodes": [],
+  "transactions": [],
+  "topology": "full_mesh",
+  "inject_bad_signature": true,
+  "inject_wrong_domain": true,
+  "faults": {
+    "drop_probability": 0.0,
+    "delay_probability": 0.0,
+    "max_delay": 0,
+    "duplicate_probability": 0.0,
+    "max_duplicates": 0,
+    "reorder_probability": 0.0
+  },
+  "message_drop_rate": 0,
+  "message_delay_rate": 0,
+  "node_crash_rate": 0
+}

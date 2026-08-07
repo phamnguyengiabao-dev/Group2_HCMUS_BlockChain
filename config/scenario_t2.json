@@ -1,0 +1,21 @@
+{
+  "scenario_id": "t2_duplicate_reorder",
+  "seed": 2002,
+  "num_validators": 8,
+  "f": 2,
+  "max_height": 2,
+  "byzantine_nodes": [],
+  "transactions": [],
+  "topology": "full_mesh",
+  "faults": {
+    "drop_probability": 0.0,
+    "delay_probability": 0.3,
+    "max_delay": 3,
+    "duplicate_probability": 0.2,
+    "max_duplicates": 1,
+    "reorder_probability": 0.2
+  },
+  "message_drop_rate": 0,
+  "message_delay_rate": 0.3,
+  "node_crash_rate": 0
+}
