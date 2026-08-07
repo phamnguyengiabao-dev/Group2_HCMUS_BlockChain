@@ -27,7 +27,7 @@ import pytest
 from src.block import BlockHeader, compute_tx_root
 from src.block_store import BlockStore
 from src.crypto import sign as crypto_sign
-from src.event_log import EventLog, EventType
+from src.event_log import EventLog
 from src.identity import load_validator_keys
 from src.ledger import Ledger
 from src.network import Envelope
@@ -475,7 +475,7 @@ def test_t3_scenario_run_rejects_every_injected_bad_message():
         ),
     )
 
-    def _vote(**kw):
+    def _vote():
         return Vote.create_signed(
             chain_id=chain_id, height=1, round=0, phase=PHASE_PREVOTE,
             block_hash_or_nil=b"\xaa" * 32,
