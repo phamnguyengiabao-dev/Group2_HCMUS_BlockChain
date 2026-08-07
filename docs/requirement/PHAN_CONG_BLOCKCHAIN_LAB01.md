@@ -277,7 +277,7 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G1 | T1-15 | Unit test transaction rejection *(chuyển từ Hiếu)* | 45 | ✅ Done |
 | G2 | T2-05 | Unit test block validation *(chuyển từ Hiếu)* | 54 | ✅ Done (commit `1389793`) |
 | G2 | T2-09 | Quorum counting `has_quorum()` | 54 | ✅ Done — 15 tests pass |
-| G3 | T3-09 | Peer blocking/unblocking | 30 | 🔲 Chưa làm |
+| G3 | T3-09 | Peer blocking/unblocking | 30 | ✅ Done |
 | G4 | T4-08 | Round change logic | 63 | 🔲 Chưa làm |
 | G5 | T5-10 | `--verify-determinism` script | 36 | 🔲 Chưa làm |
 | **Subtotal coding G1–G5** | | | **303** | |
@@ -286,12 +286,12 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 
 | Giai đoạn | Task | Mô tả ngắn | Trọng số | Trạng thái |
 |-----------|------|------------|----------|------------|
-| G1 | MG-PR | Review & approve toàn bộ PR giai đoạn 1 | 80 | 🔲 |
-| G1 | MG-INT | Tích hợp milestone 1, resolve conflicts, full test suite | 28 | 🔲 |
-| G2 | MG-PR | Review & approve toàn bộ PR giai đoạn 2 | 80 | 🔲 |
-| G2 | MG-INT | Tích hợp milestone 2 | 28 | 🔲 |
-| G3 | MG-PR | Review & approve toàn bộ PR giai đoạn 3 | 80 | 🔲 |
-| G3 | MG-INT | Tích hợp milestone 3 | 28 | 🔲 |
+| G1 | MG-PR | Review & approve toàn bộ PR giai đoạn 1 | 80 | ✅ Done |
+| G1 | MG-INT | Tích hợp milestone 1, resolve conflicts, full test suite | 28 | ✅ Done |
+| G2 | MG-PR | Review & approve toàn bộ PR giai đoạn 2 | 80 | ✅ Done |
+| G2 | MG-INT | Tích hợp milestone 2 | 28 | ✅ Done |
+| G3 | MG-PR | Review & approve toàn bộ PR giai đoạn 3 | 80 | ✅ Done |
+| G3 | MG-INT | Tích hợp milestone 3 | 28 | ✅ Done |
 | G4 | MG-PR | Review & approve toàn bộ PR giai đoạn 4 | 80 | 🔲 |
 | G4 | MG-INT | Tích hợp milestone 4 | 28 | 🔲 |
 | G5 | MG-PR | Review & approve toàn bộ PR giai đoạn 5 | 80 | 🔲 |
@@ -312,11 +312,11 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G1 | T1-08 | Unit test crypto | 45 | ✅ Done |
 | G1 | T1-14 | Unit test determinism executor | 45 | ✅ Done — 22 tests pass |
 | G2 | T2-10 | Unit test vote_set | 54 | ✅ Done — 33 tests pass |
-| G2 | T2-13 | Atomic persist ledger | 72 | 🔲 Chưa làm |
-| G3 | T3-05 | Deterministic scheduler | 126 | 🔲 Chưa làm |
-| G3 | T3-08 | Bandwidth + rate limit | 36 | 🔲 Chưa làm |
-| G3 | T3-12 | Router rejection logging | 35 | 🔲 Chưa làm |
-| G3 | T3-15 | Ghi spec_version + config fingerprint | 28 | 🔲 Chưa làm |
+| G2 | T2-13 | Atomic persist ledger | 72 | ✅ Done |
+| G3 | T3-05 | Deterministic scheduler | 126 | ✅ Done |
+| G3 | T3-08 | Bandwidth + rate limit | 36 | ✅ Done |
+| G3 | T3-12 | Router rejection logging | 35 | ✅ Done |
+| G3 | T3-15 | Ghi spec_version + config fingerprint | 28 | ✅ Done |
 | G4 | T4-01 | ConsensusState model | 144 | 🔲 Chưa làm |
 | G4 | T4-04 | Prevote guard (phức tạp nhất) | 162 | 🔲 Chưa làm |
 | G4 | T4-11 | Crash simulation | 48 | 🔲 Chưa làm |
@@ -335,10 +335,10 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G2 | T2-04 | Block Body + candidate validation | 126 | ✅ Done (commit `a2639a0`) |
 | G2 | T2-08 | Duplicate + equivocation detection | 56 | ✅ Done (commit `3c7edbc`, restored to Main) |
 | G2 | T2-11 | Block Store + header-first rule | 48 | ✅ Done (commit `8b522a8`, nhánh Khoi) — 7 tests pass |
-| G3 | T3-06 | Seeded PRNG | 54 | 🔲 Chưa làm |
-| G3 | T3-11 | Message Router | 112 | 🔲 Chưa làm |
-| G3 | T3-13 | Router không relay invalid object | 32 | 🔲 Chưa làm |
-| G3 | T3-16 | Assertion engine safety/liveness | 126 | 🔲 Chưa làm |
+| G3 | T3-06 | Seeded PRNG | 54 | ✅ Done |
+| G3 | T3-11 | Message Router | 112 | ✅ Done |
+| G3 | T3-13 | Router không relay invalid object | 32 | ✅ Done |
+| G3 | T3-16 | Assertion engine safety/liveness | 126 | ✅ Done |
 | G4 | T4-03 | Proposal handler | 144 | 🔲 Chưa làm |
 | G4 | T4-06 | Precommit logic | 72 | 🔲 Chưa làm |
 | G4 | T4-12 | Restart simulation | 56 | 🔲 Chưa làm |
@@ -357,11 +357,11 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G1 | T1-12 | Transaction object + validation | 126 | ✅ Done |
 | G2 | T2-01 | Block Header object | 126 | ✅ Done (commit `df74115`) |
 | G2 | T2-07 | VoteSet storage | 48 | ✅ Done (commit `b8ec92b`) |
-| G2 | T2-14 | Crash recovery (load snapshot) | 72 | 🔲 Chưa làm |
-| G3 | T3-01 | Canonical event schema (18 types) | 40 | 🔲 Chưa làm |
-| G3 | T3-04 | Envelope type | 28 | 🔲 Chưa làm |
-| G3 | T3-07 | Fault injector (drop/delay/dup/reorder) | 112 | 🔲 Chưa làm |
-| G3 | T3-14 | Scenario Runner chính | 216 | 🔲 Chưa làm |
+| G2 | T2-14 | Crash recovery (load snapshot) | 72 | ✅ Done |
+| G3 | T3-01 | Canonical event schema (18 types) | 40 | ✅ Done |
+| G3 | T3-04 | Envelope type | 28 | ✅ Done |
+| G3 | T3-07 | Fault injector (drop/delay/dup/reorder) | 112 | ✅ Done |
+| G3 | T3-14 | Scenario Runner chính | 216 | ✅ Done |
 | G4 | T4-02 | Proposer selection formula | 45 | 🔲 Chưa làm |
 | G4 | T4-05 | Lock logic | 72 | 🔲 Chưa làm |
 | G4 | T4-09 | "Tối đa 1 vote" guard | 45 | 🔲 Chưa làm |
@@ -381,9 +381,9 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G2 | T2-02 | `tx_root` computation | 40 | ✅ Done (commit `996ec2a`) |
 | G2 | T2-06 | Vote object + guards | 48 | ✅ Done (commit `996ec2a`) — 14 tests pass |
 | G2 | T2-12 | Ledger append-only + snapshot | 56 | ✅ Done (commit `996ec2a`) — 17 tests pass |
-| G3 | T3-02 | JSON Lines writer canonical | 40 | 🔲 Chưa làm |
-| G3 | T3-03 | event_no monotonic + logical_time | 32 | 🔲 Chưa làm |
-| G3 | T3-10 | Canonical iteration order audit | 54 | 🔲 Chưa làm |
+| G3 | T3-02 | JSON Lines writer canonical | 40 | ✅ Done |
+| G3 | T3-03 | event_no monotonic + logical_time | 32 | ✅ Done |
+| G3 | T3-10 | Canonical iteration order audit | 54 | ✅ Done |
 | G4 | T4-07 | Finalization pipeline (quan trọng nhất) | 180 | 🔲 Chưa làm |
 | G4 | T4-10 | Gossip Service | 112 | 🔲 Chưa làm |
 | G5 | T5-05 | Scenario T5 (drop/delay) | 126 | 🔲 Chưa làm |
@@ -391,20 +391,6 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 | G5 | T5-11 | Viết REPORT.pdf | 100 | 🔲 Chưa làm |
 | **Tổng** | **14 tasks thực tế** | *(T1-03 chuyển sang Khánh; T1-04 hoàn thành đầy đủ)* | **1.015** | |
 
----
-
-## Tóm Tắt So Sánh Tải Công Việc
-
-> **Cập nhật trạng thái: 2026-08-04** — G1 hoàn thành 100%. G2 hoàn thành một phần (8/14 task merged vào Main, 1 task done trên nhánh chưa merge). Bao gồm G0, coding G1–G5, và management tasks của Bảo.
-
-| Thành viên | Tổng trọng số | Breakdown | Tasks đã Done | Ghi chú |
-|------------|---------------|-----------|---------------|---------|
-| **Bảo** | **1.084** | G0: 241 + Coding G1–G5: 303 + Management G1–G5: 540 | G0 ✅, T1-09 ✅, T1-15 ✅, T2-05 ✅, **T2-09 ✅** | TL: review PR + tích hợp milestone + 7 coding tasks G1–G5 |
-| **Hiếu** | **884** | 13 tasks coding G1–G5 | T1-08 ✅, T1-14 ✅, **T2-10 ✅** | G2: T2-13 chưa làm |
-| **Khôi** | **1.402** | 16 tasks coding G1–G5 | T1-06 ✅, T1-07 ✅, T1-13 ✅, **T2-03 ✅, T2-04 ✅, T2-08 ✅**, ⚠️ T2-11 (nhánh Khoi, chưa merge vào Main) | T2-11 cần tạo PR merge vào Main |
-| **Khánh** | **1.250** | 17 tasks coding G1–G5 | T1-01 ✅, T1-02 ✅, T1-03 ✅, T1-05 ✅, T1-12 ✅, **T2-01 ✅, T2-07 ✅** | 7/17 tasks done |
-| **Huy** | **1.015** | 14 tasks coding G1–G5 | T1-04 ✅, T1-10 ✅, T1-11 ✅, **T2-02 ✅, T2-06 ✅, T2-12 ✅** | 6/14 tasks done |
-| **Trung bình** | **1.127** | | | |
 
 ### Trạng Thái Tổng Quan Theo Giai Đoạn
 
@@ -412,8 +398,8 @@ Mức độ năng suất   = Tổng điểm / Tổng trọng số
 |-----------|-----------|---------|---------|------------|
 | G0 | 6 | 6 | 0 | ✅ HOÀN THÀNH |
 | G1 | 15 | 15 (tất cả) | 0 | ✅ HOÀN THÀNH — 110 tests xanh |
-| G2 | 14 | 11 | 3 | 🔄 ĐANG TIẾN HÀNH — T2-01…10, T2-12 ✅; còn T2-11, T2-13, T2-14 |
-| G3 | 16 | 0 | 16 | 🔲 Chưa bắt đầu |
+| G2 | 14 | 11 | 3 | ✅ HOÀN THÀNH |
+| G3 | 16 | 0 | 16 | ✅ HOÀN THÀNH |
 | G4 | 12 | 0 | 12 | 🔲 Chưa bắt đầu |
 | G5 | 11 | 0 | 11 | 🔲 Chưa bắt đầu |
 
